@@ -2,7 +2,8 @@ import json
 import yaml
 from scipy.io import loadmat
 from sklearn.cluster import KMeans
-from src.train import set_feat_train
+from train import set_feat_train, set_feat_train_valid
+from test import set_feat_query_gallery
 
 
 with open('../pr_data/feature.json', 'r') as jsonfile:
@@ -25,8 +26,25 @@ for section in cfg:
             valid = attr[1].get('valid')
             n_init = attr[1].get('n_init')
 
-if valid == True:
+if valid:
+    feat_train, feat_valid = set_feat_train_valid(features, train_idx, n_clusters, n_clusters_valid, labels)
+
+    k_means = KMeans(n_clusters=n_clusters_valid, init='random', n_init=2, n_jobs=2)
+    k_means.fit(feat_valid)
+
+    n_iter = k_means.n_iter_
+
+    k_means = KMeans(n_clusters=n_clusters, init='random', n_init=n_init, n_jobs=2, max_iter=n_iter)
+    k_means.fit(feat_train + feat_valid)
+
 else:
     feat_train = set_feat_train(features, train_idx)
 
-    k_means = KMeans(n_clusters=n_clusters, )
+    k_means = KMeans(n_clusters=n_clusters, init='random', n_init=n_init, n_jobs=2)
+    k_means.fit(feat_train)
+
+cluster_means = k_means.cluster_centers_
+
+feat_query, feat_gallery = set_feat_query_gallery(features, query_idx, gallery_idx)
+
+# rank_query(rank=5)

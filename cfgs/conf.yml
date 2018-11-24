@@ -1,5 +1,5 @@
 - BASE:
     n_clusters: 1476
     n_clusters_valid: 100
-    valid: True
+    valid: False
     n_init: 10
