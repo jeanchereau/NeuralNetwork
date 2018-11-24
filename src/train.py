@@ -17,20 +17,21 @@ def set_feat_train_valid(features, train_idx, n_clusters, n_clusters_valid, labe
 
     # clusters_valid, clusters_train = clusters[0:n_clusters_valid], clusters[n_clusters_valid:None]
 
-    sub_train_idx, valid_idx = np.array([]), np.array([])
+    sub_train_idx, valid_idx = np.array([], dtype=int), np.array([], dtype=int)
 
     for i in range(0, n_clusters):
         cluster = clusters[i]
 
-        idx_set = np.transpose(np.argwhere(labels == cluster))[0]
-        idx_set = idx_set + np.ones(idx_set.size, dtype=int)
+        cluster_idx = np.transpose(np.argwhere(labels == cluster))[0]
+        cluster_idx = idx_set + np.ones(cluster_idx.size, dtype=int)
 
-        if i < n_clusters_valid:
+        for j in range(cluster_idx.size):
+            idx = np.transpose(np.argwhere(train_idx == cluster_idx[j]))[0]
 
-            valid_idx = np.concatenate((valid_idx, train_idx[]), axis=None)
-
-        else:
-            sub_train_idx = np.concatenate((sub_train_idx, train_idx[]), axis=None)
+            if i < n_clusters_valid:
+                valid_idx = np.concatenate((valid_idx, train_idx[idx]), axis=None)
+            else:
+                sub_train_idx = np.concatenate((sub_train_idx, train_idx[idx]), axis=None)
 
     for idx in train_idx:
         if idx in sub_train_idx:

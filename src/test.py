@@ -1,4 +1,4 @@
-from src.functions import rank_display
+from functions import rank_display
 
 
 def set_feat_query_gallery(features, query_idx, gallery_idx):

@@ -6,18 +6,20 @@ from train import set_feat_train, set_feat_train_valid
 from test import set_feat_query_gallery
 
 
-with open('../pr_data/feature.json', 'r') as jsonfile:
+print('Loading data...')
+with open('../pr_data/feature_data.json', 'r') as jsonfile:
     features = json.load(jsonfile)
 
-cam_id = loadmat('../pr_data/cukh03_new_protocol_config_labeled.mat')['camId'].flatten()
-file_list = loadmat('../pr_data/cukh03_new_protocol_config_labeled.mat')['filelist'].flatten()
-gallery_idx = loadmat('../pr_data/cukh03_new_protocol_config_labeled.mat')['gallery_idx'].flatten()
-labels = loadmat('../pr_data/cukh03_new_protocol_config_labeled.mat')['labels'].flatten()
-query_idx = loadmat('../pr_data/cukh03_new_protocol_config_labeled.mat')['query_idx'].flatten()
-train_idx = loadmat('../pr_data/cukh03_new_protocol_config_labeled.mat')['train_idx'].flatten()
+cam_id = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['camId'].flatten()
+file_list = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['filelist'].flatten()
+gallery_idx = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['gallery_idx'].flatten()
+labels = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['labels'].flatten()
+query_idx = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['query_idx'].flatten()
+train_idx = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['train_idx'].flatten()
 
+print('Reading YAML file...')
 with open('../cfgs/conf.yml') as ymlfile:
-    cfg = load(ymlfile)
+    cfg = yaml.load(ymlfile)
 for section in cfg:
     for attr in section.items():
         if attr[0] == 'BASE':
@@ -26,6 +28,7 @@ for section in cfg:
             valid = attr[1].get('valid')
             n_init = attr[1].get('n_init')
 
+print('Training model...')
 if valid:
     feat_train, feat_valid = set_feat_train_valid(features, train_idx, n_clusters, n_clusters_valid, labels)
 
@@ -45,6 +48,10 @@ else:
 
 cluster_means = k_means.cluster_centers_
 
+print('Building testset...')
 feat_query, feat_gallery = set_feat_query_gallery(features, query_idx, gallery_idx)
 
+print('Testing...')
 # rank_query(rank=5)
+
+print('Done!')
