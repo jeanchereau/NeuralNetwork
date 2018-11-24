@@ -23,7 +23,7 @@ def set_feat_train_valid(features, train_idx, n_clusters, n_clusters_valid, labe
         cluster = clusters[i]
 
         cluster_idx = np.transpose(np.argwhere(labels == cluster))[0]
-        cluster_idx = idx_set + np.ones(cluster_idx.size, dtype=int)
+        cluster_idx = cluster_idx + np.ones(cluster_idx.size, dtype=int)
 
         for j in range(cluster_idx.size):
             idx = np.transpose(np.argwhere(train_idx == cluster_idx[j]))[0]
