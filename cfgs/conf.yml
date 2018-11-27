@@ -1,6 +1,6 @@
 - BASE:
     n_clusters: 1467
     n_clusters_valid: 100
-    train: False
-    valid: True
+    train: True
+    valid: False
     n_init: 10

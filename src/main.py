@@ -13,10 +13,18 @@ with open('../pr_data/feature_data.json', 'r') as jsonfile:
 
 cam_id = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['camId'].flatten()
 file_list = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['filelist'].flatten()
+
 gallery_idx = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['gallery_idx'].flatten()
+gallery_idx = gallery_idx - np.ones(gallery_idx.size, dtype=int)
+
 labels = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['labels'].flatten()
+labels = labels - np.ones(labels.size, dtype=int)
+
 query_idx = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['query_idx'].flatten()
+query_idx = query_idx - np.ones(query_idx.size, dtype=int)
+
 train_idx = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['train_idx'].flatten()
+train_idx = train_idx - np.ones(train_idx.size, dtype=int)
 
 print('Reading YAML file...')
 with open('../cfgs/conf.yml') as ymlfile:
@@ -33,7 +41,8 @@ for section in cfg:
 if train:
     print('Training model...')
     if valid:
-        feat_train, feat_valid = set_feat_train_valid(features, train_idx, n_clusters, n_clusters_valid, labels)
+        feat_train, sub_train_idx, feat_valid, valid_idx = set_feat_train_valid(features, train_idx, n_clusters,
+                                                                                n_clusters_valid, labels)
 
         k_means = KMeans(n_clusters=n_clusters_valid, init='random', n_init=2, n_jobs=2)
         k_means.fit(feat_valid)
@@ -49,12 +58,17 @@ if train:
         k_means.fit(feat_train)
 
     cluster_means = k_means.cluster_centers_
+    cluster_labels = k_means.labels_
 
-    np.save('./cluster_file', cluster_means)
+    np.save('./cluster_means_file.npy', cluster_means)
+    np.save('./cluster_labels_file.npy', cluster_labels)
 else:
-    cluster_means = np.load('./cluster_file')
+    cluster_means = np.load('./cluster_means_file.npy', 'r')
+    cluster_labels = np.load('./cluster_labels_file.npy', 'r')
+
+print(cluster_labels)
 
 print('Testing...')
-rank_query(features, query_idx, gallery_idx, file_list, labels, cluster_means, cam_id, rank=10)
+rank_query(features, query_idx, gallery_idx, file_list, labels, cluster_means, cluster_labels, cam_id, rank=10)
 
 print('Done!')
