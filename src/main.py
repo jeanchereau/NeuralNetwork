@@ -5,8 +5,10 @@ from scipy.io import loadmat
 from sklearn.cluster import KMeans
 from train import set_feat_train, set_feat_train_valid
 from test import rank_query
+from functions import cluster_means_sort
 
 
+# Loading Features and Indices for Training, Query & Gallery
 print('Loading data...')
 with open('../pr_data/feature_data.json', 'r') as jsonfile:
     features = json.load(jsonfile)
@@ -26,49 +28,63 @@ query_idx = query_idx - np.ones(query_idx.size, dtype=int)
 train_idx = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['train_idx'].flatten()
 train_idx = train_idx - np.ones(train_idx.size, dtype=int)
 
+# Reading configurations file
 print('Reading YAML file...')
 with open('../cfgs/conf.yml') as ymlfile:
     cfg = yaml.load(ymlfile)
 for section in cfg:
     for attr in section.items():
         if attr[0] == 'BASE':
-            n_clusters = attr[1].get('n_clusters')
-            n_clusters_valid = attr[1].get('n_clusters_valid')
-            train = attr[1].get('train')
-            valid = attr[1].get('valid')
-            n_init = attr[1].get('n_init')
+            n_clusters = attr[1].get('N_CLUSTERS')
+            n_clusters_valid = attr[1].get('N_CLUSTERS_VALID')
+            train = attr[1].get('TRAIN')
+            valid = attr[1].get('VALID')
+            n_init = attr[1].get('N_INIT')
+            disp = attr[1].get('DISPLAY')
+            metric = attr[1].get('METRIC')
 
+# Based on input from configuration file, decide whether to train or not.
 if train:
+    # If training, then based on input from configuration file, choose to apply validation or not.
     print('Training model...')
     if valid:
-        feat_train, sub_train_idx, feat_valid, valid_idx = set_feat_train_valid(features, train_idx, n_clusters,
-                                                                                n_clusters_valid, labels)
+        # If applying validation, partition training data into training and validation sets.
+        print('-- Applying validation...')
+        feat_train, feat_valid, valid_idx = set_feat_train_valid(features, train_idx,
+                                                                 n_clusters, n_clusters_valid, labels)
 
-        k_means = KMeans(n_clusters=n_clusters_valid, init='random', n_init=2, n_jobs=2)
-        k_means.fit(feat_valid)
+        # Apply K-Means on validation set.
+        k_mean = KMeans(n_clusters=n_clusters_valid, init='random', n_init=2, n_jobs=2)
+        k_mean.fit(feat_valid)
 
-        n_iter = k_means.n_iter_
+        # Get number of iterations for convergence of cluster means with validation set.
+        n_iter = k_mean.n_iter_
 
-        k_means = KMeans(n_clusters=n_clusters, init='random', n_init=n_init, n_jobs=3, max_iter=n_iter)
-        k_means.fit(feat_train + feat_valid)
+        # Apply K-Means on entire training set with maximum iterations n_iter.
+        print('-- Final training...')
+        k_mean = KMeans(n_clusters=n_clusters, init='random', n_init=n_init, n_jobs=4, max_iter=n_iter, tol=1e-6)
+        k_mean.fit(feat_train)
+
     else:
+        # If not applying validation, apply K-Means on entire training set.
         feat_train = set_feat_train(features, train_idx)
 
-        k_means = KMeans(n_clusters=n_clusters, init='random', n_init=n_init, n_jobs=3)
-        k_means.fit(feat_train)
+        k_mean = KMeans(n_clusters=n_clusters, init='random', n_init=n_init, n_jobs=4, tol=1e-2)
+        k_mean.fit(feat_train)
 
-    cluster_means = k_means.cluster_centers_
-    cluster_labels = k_means.labels_
+    # Save cluster means to .npy file in ./src folder.
+    print('-- Saving cluster means...')
+    print(k_mean.labels_)
+    cluster_means = cluster_means_sort(k_mean.cluster_centers_, k_mean.labels_)
+    np.save('./cluster_file.npy', cluster_means)
 
-    np.save('./cluster_means_file.npy', cluster_means)
-    np.save('./cluster_labels_file.npy', cluster_labels)
 else:
-    cluster_means = np.load('./cluster_means_file.npy', 'r')
-    cluster_labels = np.load('./cluster_labels_file.npy', 'r')
+    # If not training, load cluster means from .npy file in ./src folder.
+    print('Loading cluster means...')
+    cluster_means = np.array(np.load('./cluster_file.npy', 'r'))
 
-print(cluster_labels)
-
+# Test model with metric given in configuration file.
 print('Testing...')
-rank_query(features, query_idx, gallery_idx, file_list, labels, cluster_means, cluster_labels, cam_id, rank=10)
+rank_query(features, query_idx, gallery_idx, file_list, labels, cluster_means, cam_id, rank=10)
 
 print('Done!')

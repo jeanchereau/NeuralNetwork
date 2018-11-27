@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from functions import knn
 
 
+# Partitions features related to query and features related to gallery.
 def set_feat_query_gallery(features, query_idx, gallery_idx):
     feat_query, feat_gallery = [], []
 
@@ -15,6 +16,7 @@ def set_feat_query_gallery(features, query_idx, gallery_idx):
     return feat_query, feat_gallery
 
 
+# Partitions features related to camera 1 gallery and features related to camera 2 gallery.
 def set_feat_cam1_cam2(feat_gallery, gallery_idx, cam_id):
     feat_gall_cam1, feat_gall_cam2 = [], []
     gall_cam1_idx, gall_cam2_idx = np.array([], dtype=int), np.array([], dtype=int)
@@ -33,6 +35,7 @@ def set_feat_cam1_cam2(feat_gallery, gallery_idx, cam_id):
     return feat_gall_cam1, gall_cam1_idx, feat_gall_cam2, gall_cam2_idx
 
 
+#
 def rank_query(features, query_idx, gallery_idx, file_list, labels, cluster_means, cluster_labels, cam_id, rank=1):
     feat_query, feat_gallery = set_feat_query_gallery(features, query_idx, gallery_idx)
 
