@@ -5,7 +5,6 @@ from scipy.io import loadmat
 from sklearn.cluster import KMeans
 from train import set_feat_train, set_feat_train_valid
 from test import rank_query
-from functions import cluster_means_sort
 
 
 # Loading Features and Indices for Training, Query & Gallery
@@ -62,20 +61,19 @@ if train:
 
         # Apply K-Means on entire training set with maximum iterations n_iter.
         print('-- Final training...')
-        k_mean = KMeans(n_clusters=n_clusters, init='random', n_init=n_init, n_jobs=4, max_iter=n_iter, tol=1e-6)
+        k_mean = KMeans(n_clusters=n_clusters, init='random', n_init=n_init, n_jobs=4, max_iter=n_iter)
         k_mean.fit(feat_train)
 
     else:
         # If not applying validation, apply K-Means on entire training set.
         feat_train = set_feat_train(features, train_idx)
 
-        k_mean = KMeans(n_clusters=n_clusters, init='random', n_init=n_init, n_jobs=4, tol=1e-2)
+        k_mean = KMeans(n_clusters=n_clusters, init='random', n_init=n_init, n_jobs=4)
         k_mean.fit(feat_train)
 
     # Save cluster means to .npy file in ./src folder.
     print('-- Saving cluster means...')
-    print(k_mean.labels_)
-    cluster_means = cluster_means_sort(k_mean.cluster_centers_, k_mean.labels_)
+    cluster_means = k_mean.cluster_centers_
     np.save('./cluster_file.npy', cluster_means)
 
 else:
@@ -85,6 +83,6 @@ else:
 
 # Test model with metric given in configuration file.
 print('Testing...')
-rank_query(features, query_idx, gallery_idx, file_list, labels, cluster_means, cam_id, rank=10)
-
+avg = rank_query(features, query_idx, gallery_idx, file_list, labels, cluster_means, cam_id, rank=10, display=disp)
+print('Mean Average Precision is %.2f' % avg)
 print('Done!')

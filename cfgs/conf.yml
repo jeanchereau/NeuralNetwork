@@ -1,8 +1,8 @@
 - BASE:
     N_CLUSTERS: 1467
     N_CLUSTERS_VALID: 100
-    TRAIN: True
-    VALID: False
+    TRAIN: False
+    VALID: True
     N_INIT: 4
-    DISPLAY: True
+    DISPLAY: False
     METRIC: 'l2'           # {'l1', 'l2', 'cos', 'maha', 'chi'}

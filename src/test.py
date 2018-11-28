@@ -36,15 +36,16 @@ def set_feat_cam1_cam2(feat_gallery, gallery_idx, cam_id):
 
 
 #
-def rank_query(features, query_idx, gallery_idx, file_list, labels, cluster_means, cluster_labels, cam_id, rank=1):
+def rank_query(features, query_idx, gallery_idx, file_list, labels, cluster_means, cam_id, rank=1, display=False):
     feat_query, feat_gallery = set_feat_query_gallery(features, query_idx, gallery_idx)
 
     feat_gall_cam1, gall_cam1_idx, feat_gall_cam2, gall_cam2_idx = set_feat_cam1_cam2(feat_gallery, gallery_idx, cam_id)
 
-    color = np.zeros(rank+1, dtype=int)
+    prec = np.array([])
 
+    color = np.zeros(rank+1, dtype=int)
     for idx in query_idx:
-        cluster_idx = cluster_labels[idx]
+        cluster_idx = knn(np.array(features[idx]), cluster_means)
 
         if cam_id[idx] == 1:
             k_idx = knn(cluster_means[cluster_idx, :], np.array(feat_gall_cam2), k=rank)
@@ -57,17 +58,22 @@ def rank_query(features, query_idx, gallery_idx, file_list, labels, cluster_mean
 
         id_query = labels[idx]
 
+        score = 0
         for j in range(rank):
             if id_query == id_gallery[j]:
                 color[j+1] = 1
+                score = 1
             else:
                 color[j+1] = 2
 
-        # map = rank_map()
-        # print(query_idx[i], map)
-        rank_display(rank, color, file_list[file_idx])
+        prec = np.append(prec, score, axis=None)
 
-    return color
+        if display:
+            rank_display(rank, color, file_list[file_idx])
+
+    mean_av_prec = np.mean(prec, axis=None)
+
+    return mean_av_prec
 
 
 def rank_display(rank, color, image_files):
