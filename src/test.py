@@ -98,10 +98,3 @@ def rank_display(rank, color, image_files):
         i += 1
 
     plt.show()
-
-
-def rank_map(rank_score):
-    maprec = np.mean(rank_score, axis=None)
-
-    return maprec
-
