@@ -1,16 +1,15 @@
 - BASE:                             # Baseline parameters for testing.
-    DISPLAY: False                      # Whether to display the results for each query - Recommended for debugging.
-    RANK: 1                             # Number of elements in gallery closest to query.
-    METRIC: 1                           # Type of distance metric to use - MUST be defined: {'l1': 0, 'l2': 1, 'cos': 2, 'maha': 3, 'cheby': 4}
+    DISPLAY: True                      # Whether to display the results for each query - Recommended for debugging.
+    RANK: 5                             # Number of elements in gallery closest to query.
+    METRIC: 4                           # Type of distance metric to use - MUST be defined: {'l1': 0, 'l2': 1, 'cos': 2, 'maha': 3, 'cheby': 4}
     N_CLUSTERS: 1467                    # Number of clusters we expect to find in given feature set - DO NOT edit.
     N_CLUSTERS_VALID: 100               # Number of clusters used for validation - DO NOT edit.
 - SPREADING:                        # Baseline parameters for dimension reduction & spreading of data.
-    PCA_LDA: False                      # Whether to apply PCA-LDA on the feature set or not - Performed before clustering.
+    LDA: True                          # Whether to apply PCA-LDA on the feature set or not - Performed before clustering.
     SPREAD_TRAIN: True                  # Whether to train a spread model or not. If not, load model from json file.
-    M_PCA: 4000                         # Mpca - can be integer (<= N - n_clusters) or empty (= None).
     M_LDA: 700                          # Mlda - can be integer (<= n_clusters - 1) or empty (= None).
 - CLUSTERING:                       # Baseline parameters for training / clustering.
-    KMEANS: True                        # Whether to apply KMEANS or not.
+    KMEANS: False                        # Whether to apply KMEANS or not.
     CLUSTER_TRAIN: False                # Whether to train a clustered model or not. If not, load model from '.npy' file.
     CLUSTER_VALID: True                 # Whether to validate model before final training or not. If 'TRAIN' is False, override.
     N_INIT: 4                           # Number of ... . If 'KMEANS' is False, override.

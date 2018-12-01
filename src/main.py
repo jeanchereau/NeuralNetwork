@@ -5,7 +5,7 @@ from scipy.io import loadmat
 from sklearn.cluster import KMeans
 from train import set_feat_train, set_feat_train_valid
 from test import rank_query
-from model import pca_lda
+from model import lda
 
 
 # Read configurations file in './cfgs'
@@ -21,9 +21,8 @@ for section in cfg:
             n_clusters = attr[1].get('N_CLUSTERS')
             n_clusters_valid = attr[1].get('N_CLUSTERS_VALID')
         elif attr[0] == 'SPREADING':
-            bool_pca_lda = attr[1].get('PCA_LDA')
+            bool_pca_lda = attr[1].get('LDA')
             bool_s_train = attr[1].get('SPREAD_TRAIN')
-            m_pca = attr[1].get('M_PCA')
             m_lda = attr[1].get('M_LDA')
         elif attr[0] == 'CLUSTERING':
             bool_kmeans = attr[1].get('KMEANS')
@@ -32,28 +31,7 @@ for section in cfg:
             n_init = attr[1].get('N_INIT')
 
 
-# Loading Features and Indices for Training, Query & Gallery
-print('Loading feature data...')
-if bool_pca_lda:
-    if bool_s_train:
-        with open('../pr_data/feature_data.json', 'r') as infile:
-            features = json.load(infile)
-
-        print('Applying PCA-LDA...')
-        features = pca_lda(np.array(features), m_pca=m_pca, m_lda=m_lda, n_clusters=n_clusters)  # Perform PCA-LDA
-        features.tolist()
-
-        with open('../pr_data/feature_pca_lda_data.json', 'w') as outfile:
-            json.dump(features, outfile)
-    else:
-        with open('../pr_data/feature_pca_lda_data.json', 'r') as infile:
-            features = json.load(infile)
-else:
-    with open('../pr_data/feature_data.json', 'r') as jsonfile:
-        features = json.load(jsonfile)
-
-
-print('Loading indices...')
+print('Loading protocol data...')
 cam_idx = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['camId'].flatten()
 file_list = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['filelist'].flatten()
 
@@ -70,14 +48,35 @@ train_idx = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['train_
 train_idx = train_idx - np.ones(train_idx.size, dtype=int)
 
 
+# Loading Features and Indices for Training, Query & Gallery
+print('Loading feature data...')
+if bool_pca_lda:
+    if bool_s_train:
+        with open('../pr_data/feature_data.json', 'r') as infile:
+            features = json.load(infile)
+
+        feat_train = set_feat_train(features, train_idx)
+
+        print('Applying LDA...')
+        w_lda, mu_lda = lda(np.array(feat_train), labels[train_idx], m_lda=m_lda, n_clusters=n_clusters)
+
+        features_proj = (np.array(features) - mu_lda[None, :]).dot(w_lda)
+
+        features = features_proj.tolist()
+
+        with open('../pr_data/feature_lda_data.json', 'w') as outfile:
+            json.dump(features, outfile)
+    else:
+        with open('../pr_data/feature_lda_data.json', 'r') as infile:
+            features = json.load(infile)
+else:
+    with open('../pr_data/feature_data.json', 'r') as jsonfile:
+        features = json.load(jsonfile)
+
+
 if bool_kmeans:
     # Based on input from configuration file, decide whether to train or not.
     if bool_c_train:
-        if bool_pca_lda:
-            file_cluster_out = './cluster_pca_lda_file.npy'
-        else:
-            file_cluster_out = './cluster_file.npy'
-
         # If training, then based on input from configuration file, choose to apply validation or not.
         print('Training model...')
         if bool_c_valid:
@@ -107,6 +106,11 @@ if bool_kmeans:
 
         # Save cluster means to .npy file in ./src folder.
         print('-- Saving cluster means...')
+        if bool_pca_lda:
+            file_cluster_out = './cluster_lda_file.npy'
+        else:
+            file_cluster_out = './cluster_file.npy'
+
         cluster_means = k_means.cluster_centers_
         np.save(file_cluster_out, cluster_means)
 
@@ -114,10 +118,10 @@ if bool_kmeans:
         # If not training, load cluster means from .npy file in ./src folder.
         print('Loading cluster means...')
         if bool_pca_lda:
-            with open('../pr_data/feature_pca_lda_data.json', 'r') as jsonfile:
+            with open('../pr_data/feature_lda_data.json', 'r') as jsonfile:
                 features_set = json.load(jsonfile)
 
-            file_cluster_in = './cluster_file_pca_lda.npy'
+            file_cluster_in = './cluster_file_lda.npy'
         else:
             features_set = features
             file_cluster_in = './cluster_file.npy'
