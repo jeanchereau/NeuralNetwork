@@ -1,8 +1,8 @@
 - BASE:                             # Baseline parameters for testing.
-    DISPLAY: True                      # Whether to display the results for each query - Recommended for debugging.
+    DISPLAY: False                      # Whether to display the results for each query - Recommended for debugging.
     RANK: 5                             # Number of elements in gallery closest to query.
     METRIC: 1                           # Type of distance metric to use - MUST be defined: {'l1': 0, 'l2': 1, 'cos': 2, 'maha': 3, 'chi': 4}
-    CLUSTER: True                       # Whether to test with clustering or not.
+    CLUSTER: False                       # Whether to test with clustering or not.
 - CLUSTERING:                       # Baseline parameters or training / clustering.
     TRAIN: False                        # Whether to train / cluster or not.
     VALID: True                         # Whether to validate model before final training or not. If 'TRAIN' is False, override.

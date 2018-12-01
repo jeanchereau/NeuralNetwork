@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from src.functions import kmetric
+from functions import kmetric
 
 
 # Partitions features related to query and features related to gallery.
@@ -37,7 +37,7 @@ def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, clu
                metric=1, rank=1, display=False):
     feat_query, feat_gallery = set_feat_query_gallery(features, query_idx, gallery_idx)
 
-    rank_score = np.zeros((1, features.shape[0]))
+    rank_score = np.zeros(len(feat_query))
 
     color = np.zeros(rank+1, dtype=int)
     i = 0
@@ -52,7 +52,7 @@ def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, clu
             cluster_idx = kmetric(np.array(features[idx]), cluster_means)
             k_idx = kmetric(cluster_means[cluster_idx, :], np.array(feat_gall_cam_rem), metric=metric, k=rank)
         else:
-            k_idx = kmetric(features[idx], np.array(feat_gall_cam_rem), metric=metric, k=rank)
+            k_idx = kmetric(np.array(features[idx]), np.array(feat_gall_cam_rem), metric=metric, k=rank)
 
         gallery_id = labels[gall_cam_rem_idx[k_idx]]
         file_idx = np.concatenate((idx, gall_cam_rem_idx[k_idx]), axis=None)

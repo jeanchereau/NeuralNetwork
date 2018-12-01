@@ -3,8 +3,8 @@ import json
 import yaml
 from scipy.io import loadmat
 from sklearn.cluster import KMeans
-from src.train import set_feat_train, set_feat_train_valid
-from src.test import rank_query
+from train import set_feat_train, set_feat_train_valid
+from test import rank_query
 
 
 # Read configurations file in './cfgs'
