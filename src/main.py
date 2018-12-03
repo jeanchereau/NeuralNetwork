@@ -3,9 +3,10 @@ import json
 import yaml
 from scipy.io import loadmat
 from sklearn.cluster import KMeans
+from sklearn.decomposition import kernelPCA
 from train import set_feat_train, set_feat_train_valid
 from test import rank_query
-from model import lda
+from model import pca
 
 
 # Read configurations file in './cfgs'
@@ -20,18 +21,18 @@ for section in cfg:
             metric = attr[1].get('METRIC')
             n_clusters = attr[1].get('N_CLUSTERS')
             n_clusters_valid = attr[1].get('N_CLUSTERS_VALID')
-        elif attr[0] == 'SPREADING':
-            bool_pca_lda = attr[1].get('LDA')
-            bool_s_train = attr[1].get('SPREAD_TRAIN')
-            m_lda = attr[1].get('M_LDA')
+        elif attr[0] == 'TRANSFORM':
+            bool_log_kpca = attr[1].get('LOG_KPCA')
+            m_pca = attr[1].get('M_PCA')
+            bool_transform_train = attr[1].get('TRANSFORM_TRAIN')
         elif attr[0] == 'CLUSTERING':
             bool_kmeans = attr[1].get('KMEANS')
-            bool_c_train = attr[1].get('CLUSTER_TRAIN')
-            bool_c_valid = attr[1].get('CLUSTER_VALID')
+            bool_cluster_train = attr[1].get('CLUSTER_TRAIN')
+            bool_cluster_valid = attr[1].get('CLUSTER_VALID')
             n_init = attr[1].get('N_INIT')
 
 
-print('Loading protocol data...')
+print('Loading protocole data...')
 cam_idx = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['camId'].flatten()
 file_list = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['filelist'].flatten()
 
@@ -50,24 +51,28 @@ train_idx = train_idx - np.ones(train_idx.size, dtype=int)
 
 # Loading Features and Indices for Training, Query & Gallery
 print('Loading feature data...')
-if bool_pca_lda:
-    if bool_s_train:
+if bool_log_kpca:
+    if bool_transform_train:
         with open('../pr_data/feature_data.json', 'r') as infile:
             features = json.load(infile)
 
-        feat_train = set_feat_train(features, train_idx)
+        features = np.log(np.array(features) + 1)
 
-        print('Applying LDA...')
-        w_lda, mu_lda = lda(np.array(feat_train), labels[train_idx], m_lda=m_lda, n_clusters=n_clusters)
+        feat_train = set_feat_train(features.tolist(), train_idx)
 
-        features_proj = (np.array(features) - mu_lda[None, :]).dot(w_lda)
+        print('Applying Kernel PCA...')
+        kpca = KernelPCA(n_components=m_pca, kernel='rbf', fit_inverse_transform=True, n_jobs=4)
+        kpca.fit(feat_train)
+        u_pca, mu_pca = pca(np.array(feat_train), m_pca=m_pca)
+
+        features_proj = (np.array(features) - mu_pca[None, :]).dot(u_pca)
 
         features = features_proj.tolist()
 
-        with open('../pr_data/feature_lda_data.json', 'w') as outfile:
+        with open('../pr_data/feature_log_kpca_data.json', 'w') as outfile:
             json.dump(features, outfile)
     else:
-        with open('../pr_data/feature_lda_data.json', 'r') as infile:
+        with open('../pr_data/feature_log_kpca_data.json', 'r') as infile:
             features = json.load(infile)
 else:
     with open('../pr_data/feature_data.json', 'r') as jsonfile:
@@ -76,10 +81,10 @@ else:
 
 if bool_kmeans:
     # Based on input from configuration file, decide whether to train or not.
-    if bool_c_train:
+    if bool_cluster_train:
         # If training, then based on input from configuration file, choose to apply validation or not.
         print('Training model...')
-        if bool_c_valid:
+        if bool_cluster_valid:
             # If applying validation, partition training data into training and validation sets.
             print('-- Applying validation...')
             feat_train, feat_valid, valid_idx = set_feat_train_valid(features, train_idx,
@@ -106,8 +111,8 @@ if bool_kmeans:
 
         # Save cluster means to .npy file in ./src folder.
         print('-- Saving cluster means...')
-        if bool_pca_lda:
-            file_cluster_out = './cluster_lda_file.npy'
+        if bool_log_kpca:
+            file_cluster_out = './cluster_pca_file.npy'
         else:
             file_cluster_out = './cluster_file.npy'
 
@@ -117,16 +122,12 @@ if bool_kmeans:
     else:
         # If not training, load cluster means from .npy file in ./src folder.
         print('Loading cluster means...')
-        if bool_pca_lda:
-            with open('../pr_data/feature_lda_data.json', 'r') as jsonfile:
-                features_set = json.load(jsonfile)
-
-            file_cluster_in = './cluster_file_lda.npy'
+        if bool_log_kpca:
+            file_cluster_in = './cluster_pca_file.npy'
         else:
-            features_set = features
             file_cluster_in = './cluster_file.npy'
 
-        cluster_means = np.array(np.load(file_cluster_in, 'r'))
+        cluster_means = np.array(np.load(file_cluster_in, 'r')).tolist()
 else:
     cluster_means = None
 

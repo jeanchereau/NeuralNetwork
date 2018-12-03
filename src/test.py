@@ -49,13 +49,15 @@ def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, clu
         feat_gall_cam_rem, gall_cam_rem_idx = rem_feat_cam_label(feat_gallery, gallery_idx, query_id, cam_id,
                                                                  labels, cam_idx)
         if cluster_means is not None:
-            cluster_idx = kmetric(np.array(features[idx]), cluster_means)
-            k_idx = kmetric(cluster_means[cluster_idx, :], np.array(feat_gall_cam_rem), metric=metric, k=rank)
+            cluster_idx = np.asscalar(kmetric(np.array(features[idx]), np.array(cluster_means)))
+            k_idx = kmetric(np.array(cluster_means[cluster_idx]), np.array(feat_gall_cam_rem), metric=metric, k=rank)
         else:
             k_idx = kmetric(np.array(features[idx]), np.array(feat_gall_cam_rem), metric=metric, k=rank)
 
         gallery_id = labels[gall_cam_rem_idx[k_idx]]
         file_idx = np.concatenate((idx, gall_cam_rem_idx[k_idx]), axis=None)
+
+        print('-- query:', query_id, '/ gallery:', gallery_id)
 
         score = 0
         for j in range(rank):

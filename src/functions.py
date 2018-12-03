@@ -32,6 +32,10 @@ def eigen_order(s, m=None):
 
     indices = np.argsort(np.abs(lc))[::-1]
 
+    plt.figure()
+    plt.plot(np.abs(lc[indices]))
+    plt.title('Eigenvalues of principle components.')
+
     v = np.abs(vc[:, indices])[:, 0:m]
 
     return v
