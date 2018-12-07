@@ -1,5 +1,5 @@
 import numpy as np
-from functions import kmetric, knn, result_display
+from functions import knn, result_display
 
 
 # Partitions features related to query and features related to gallery.
@@ -21,6 +21,7 @@ def rem_feat_cam_label(feat_gallery, gallery_idx, query_id, cam_id, labels, cam_
     gall_cam_rem_idx = np.array([], dtype=int)
 
     i = 0
+    n_docs = 0
     for idx in gallery_idx:
         if not (labels[idx] == query_id and cam_idx[idx] == cam_id):
             feat_gall_cam_rem.append(feat_gallery[i])
@@ -28,29 +29,29 @@ def rem_feat_cam_label(feat_gallery, gallery_idx, query_id, cam_id, labels, cam_
 
         i += 1
 
-    return feat_gall_cam_rem, gall_cam_rem_idx
+    return feat_gall_cam_rem, gall_cam_rem_idx, n_docs
 
 
 #
-def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, quad_mat=None, rank=1, display=False):
+def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, rank=1, display=False):
     feat_query, feat_gallery = set_feat_query_gallery(features, query_idx, gallery_idx)
 
     rank_score = np.zeros(len(feat_query))
+    avg_prec = np.zeros(len(feat_query))
+    avg_recall = np.zeros(len(feat_query))
 
     color = np.zeros(rank+1, dtype=int)
     i = 0
-    tp, fp = 0, 0
     for idx in query_idx:
+        tp, fp, fn = 0, 0, 0
+
         query_id = labels[idx]
         cam_id = cam_idx[idx]
 
-        feat_gall_cam_rem, gall_cam_rem_idx = rem_feat_cam_label(feat_gallery, gallery_idx, query_id, cam_id,
-                                                                 labels, cam_idx)
+        feat_gall_cam_rem, gall_cam_rem_idx, n_docs = rem_feat_cam_label(feat_gallery, gallery_idx, query_id, cam_id,
+                                                                         labels, cam_idx)
 
-        if quad_mat is None:
-            k_idx = knn(np.array(features[idx]), np.array(feat_gall_cam_rem), k=rank)
-        else:
-            k_idx = kmetric(np.array(features[idx]), np.array(feat_gall_cam_rem), quad_mat, k=rank)
+        k_idx = knn(np.array(features[idx]), np.array(feat_gall_cam_rem), k=rank)
 
         gallery_id = labels[gall_cam_rem_idx[k_idx]]
         file_idx = np.concatenate((idx, gall_cam_rem_idx[k_idx]), axis=None)
@@ -64,6 +65,9 @@ def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, qua
                 color[j+1] = 2
                 fp += 1
 
+        avg_prec[i] = tp / (tp + fp)
+        avg_recall[i] = tp / (tp + fn)
+
         print('-- Query:', query_id, '/ Gallery:', gallery_id, '/ Retrieval:', rank_score[i])
         if display:
             result_display(rank, color, file_list[file_idx])
@@ -71,9 +75,10 @@ def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, qua
         i += 1
 
     rank_score = np.mean(rank_score, axis=None)
-    ma_prec = tp / (tp + fp)
+    avg_prec = np.mean(avg_prec, axis=None)
+    avg_recall = np.mean(avg_prec, axis=None)
 
-    return rank_score, ma_prec
+    return rank_score, avg_prec, avg_recall
 
 
 

@@ -12,10 +12,11 @@ def set_feat_train(features, train_idx):
 
 
 # Partitions features related to training and features related to validation.
-def set_feat_train_valid(features, train_idx, n_clusters, n_clusters_valid, labels):
+def set_feat_train_valid(features, train_idx, n_clusters_valid, labels):
     feat_train, feat_valid = [], []
 
-    clusters = np.random.permutation(np.arange(0, n_clusters))
+    clusters = np.random.permutation(np.unique(labels[train_idx]))
+
     clusters_valid = clusters[0:n_clusters_valid]
 
     valid_idx = np.array([], dtype=int)
@@ -24,7 +25,7 @@ def set_feat_train_valid(features, train_idx, n_clusters, n_clusters_valid, labe
         if labels[idx] in clusters_valid:
             feat_valid.append(features[idx])
             valid_idx = np.append(valid_idx, idx, axis=None)
-
-        feat_train.append(features[idx])
+        else:
+            feat_train.append(features[idx])
 
     return feat_train, feat_valid, valid_idx

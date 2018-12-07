@@ -54,3 +54,18 @@ def result_display(rank, color, image_files):
         i += 1
 
     plt.show()
+
+
+def f_measure(prec, recall):
+
+    db = 0.01
+    beta = np.arange(db, 100, db)
+
+    f = (1 + np.square(beta)) * (prec * recall) / (np.square(beta) * prec + recall)
+
+    fig, ax = plt.subplots()
+
+    ax.semilogx(beta, f)
+    ax.grid()
+
+    plt.show()

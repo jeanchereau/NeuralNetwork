@@ -17,3 +17,15 @@ def pca(features, m_pca=None):
 
     return u, mu
 
+
+def optimize_metric(features, max_iter=300):
+    rows, cols = features.shape
+    quad_mat = np.zeros((cols, cols))
+    n_iter = 0
+
+    while n_iter < max_iter:
+        n_iter += 1
+
+    g_mat = np.linalg.cholesky(quad_mat)
+
+    return g_mat, n_iter
