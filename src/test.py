@@ -48,7 +48,7 @@ def rem_feat_cam_label(feat_gallery, gallery_idx, query_id, cam_id, labels, cam_
 
 
 #
-def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, rank=1, display=False):
+def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, rank=1, display=False, cluster_means=None):
     feat_query, feat_gallery = set_feat_query_gallery(features, query_idx, gallery_idx)
 
     rank_score = np.zeros(len(feat_query))
@@ -66,7 +66,11 @@ def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, ran
         feat_gall_cam_rem, gall_cam_rem_idx, n_docs = rem_feat_cam_label(feat_gallery, gallery_idx, query_id, cam_id,
                                                                          labels, cam_idx)
 
-        k_idx = knn(np.array(features[idx]), np.array(feat_gall_cam_rem), k=rank)
+        if cluster_means is None:
+            k_idx = knn(np.array(features[idx]), np.array(feat_gall_cam_rem), k=rank)
+        else:
+            cluster_idx = knn(np.array(features[idx]), np.array(cluster_means))
+            k_idx = knn(np.array(cluster_means[cluster_idx]), np.array(feat_gall_cam_rem), k=rank)
 
         gallery_id = labels[gall_cam_rem_idx[k_idx]]
         file_idx = np.concatenate((idx, gall_cam_rem_idx[k_idx]), axis=None)

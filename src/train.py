@@ -19,7 +19,7 @@ def set_feat_train_valid(features, train_idx, n_clusters_valid, labels):
 
     clusters_valid = clusters[0:n_clusters_valid]
 
-    valid_idx = np.array([], dtype=int)
+    subtrain_idx, valid_idx = np.array([], dtype=int), np.array([], dtype=int)
 
     for idx in train_idx:
         if labels[idx] in clusters_valid:
@@ -27,5 +27,6 @@ def set_feat_train_valid(features, train_idx, n_clusters_valid, labels):
             valid_idx = np.append(valid_idx, idx, axis=None)
         else:
             feat_train.append(features[idx])
+            subtrain_idx = np.append(subtrain_idx, idx, axis=None)
 
-    return feat_train, feat_valid, valid_idx
+    return feat_train, subtrain_idx, feat_valid, valid_idx
