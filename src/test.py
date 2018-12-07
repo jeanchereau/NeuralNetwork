@@ -51,7 +51,7 @@ def rem_feat_cam_label(feat_gallery, gallery_idx, query_id, cam_id, labels, cam_
 def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, rank=1, display=False, cluster_means=None):
     feat_query, feat_gallery = set_feat_query_gallery(features, query_idx, gallery_idx)
 
-    rank_score = np.zeros(len(feat_query))
+    rank_score = np.zeros(len(feat_query), dtype=int)
     avg_prec = np.zeros(len(feat_query))
     avg_recall = np.zeros(len(feat_query))
 
