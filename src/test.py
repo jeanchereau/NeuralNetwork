@@ -1,6 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from functions import kmetric
+from functions import kmetric, knn, result_display
 
 
 # Partitions features related to query and features related to gallery.
@@ -33,8 +32,7 @@ def rem_feat_cam_label(feat_gallery, gallery_idx, query_id, cam_id, labels, cam_
 
 
 #
-def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, cluster_means=None,
-               metric=1, rank=1, display=False):
+def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, quad_mat=None, rank=1, display=False):
     feat_query, feat_gallery = set_feat_query_gallery(features, query_idx, gallery_idx)
 
     rank_score = np.zeros(len(feat_query))
@@ -48,32 +46,29 @@ def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, clu
 
         feat_gall_cam_rem, gall_cam_rem_idx = rem_feat_cam_label(feat_gallery, gallery_idx, query_id, cam_id,
                                                                  labels, cam_idx)
-        if cluster_means is not None:
-            cluster_idx = np.asscalar(kmetric(np.array(features[idx]), np.array(cluster_means)))
-            k_idx = kmetric(np.array(cluster_means[cluster_idx]), np.array(feat_gall_cam_rem), metric=metric, k=rank)
+
+        if quad_mat is None:
+            k_idx = knn(np.array(features[idx]), np.array(feat_gall_cam_rem), k=rank)
         else:
-            k_idx = kmetric(np.array(features[idx]), np.array(feat_gall_cam_rem), metric=metric, k=rank)
+            k_idx = kmetric(np.array(features[idx]), np.array(feat_gall_cam_rem), quad_mat, k=rank)
 
         gallery_id = labels[gall_cam_rem_idx[k_idx]]
         file_idx = np.concatenate((idx, gall_cam_rem_idx[k_idx]), axis=None)
 
-        print('-- query:', query_id, '/ gallery:', gallery_id)
-
-        score = 0
         for j in range(rank):
             if query_id == gallery_id[j]:
                 color[j+1] = 1
                 tp += 1
-                score = 1
+                rank_score[i] = 1
             else:
                 color[j+1] = 2
                 fp += 1
 
-        rank_score[i] = score
-        i += 1
-
+        print('-- Query:', query_id, '/ Gallery:', gallery_id, '/ Retrieval:', rank_score[i])
         if display:
-            rank_display(rank, color, file_list[file_idx])
+            result_display(rank, color, file_list[file_idx])
+
+        i += 1
 
     rank_score = np.mean(rank_score, axis=None)
     ma_prec = tp / (tp + fp)
@@ -81,22 +76,4 @@ def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, clu
     return rank_score, ma_prec
 
 
-def rank_display(rank, color, image_files):
-    color_dict = ['black', 'green', 'red']
-    w = rank + 3
-    h = 3
-    fig = plt.figure(figsize=(w, h))
-    cols = rank + 1
-    rows = 1
 
-    i = 0
-    for image_file in image_files:
-        image = plt.imread('../pr_data/images_cuhk03/' + image_file[0])
-        ax = fig.add_subplot(rows, cols, i+1)
-        plt.imshow(image, aspect='auto')
-        plt.setp(ax.spines.values(), color=color_dict[color[i]], linewidth=3)
-        ax.tick_params(bottom=False, top=False, left=False, right=False,
-                       labelbottom=False, labeltop=False, labelleft=False, labelright=False)
-        i += 1
-
-    plt.show()

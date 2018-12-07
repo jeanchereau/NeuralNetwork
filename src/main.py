@@ -3,7 +3,6 @@ import json
 import yaml
 from scipy.io import loadmat
 from sklearn.cluster import KMeans
-from sklearn.decomposition import kernelPCA
 from train import set_feat_train, set_feat_train_valid
 from test import rank_query
 from model import pca
@@ -22,7 +21,7 @@ for section in cfg:
             n_clusters = attr[1].get('N_CLUSTERS')
             n_clusters_valid = attr[1].get('N_CLUSTERS_VALID')
         elif attr[0] == 'TRANSFORM':
-            bool_log_kpca = attr[1].get('LOG_KPCA')
+            bool_log_pca = attr[1].get('LOG_PCA')
             m_pca = attr[1].get('M_PCA')
             bool_transform_train = attr[1].get('TRANSFORM_TRAIN')
         elif attr[0] == 'CLUSTERING':
@@ -51,7 +50,7 @@ train_idx = train_idx - np.ones(train_idx.size, dtype=int)
 
 # Loading Features and Indices for Training, Query & Gallery
 print('Loading feature data...')
-if bool_log_kpca:
+if bool_log_pca:
     if bool_transform_train:
         with open('../pr_data/feature_data.json', 'r') as infile:
             features = json.load(infile)
@@ -60,9 +59,7 @@ if bool_log_kpca:
 
         feat_train = set_feat_train(features.tolist(), train_idx)
 
-        print('Applying Kernel PCA...')
-        kpca = KernelPCA(n_components=m_pca, kernel='rbf', fit_inverse_transform=True, n_jobs=4)
-        kpca.fit(feat_train)
+        print('Applying PCA...')
         u_pca, mu_pca = pca(np.array(feat_train), m_pca=m_pca)
 
         features_proj = (np.array(features) - mu_pca[None, :]).dot(u_pca)
@@ -111,7 +108,7 @@ if bool_kmeans:
 
         # Save cluster means to .npy file in ./src folder.
         print('-- Saving cluster means...')
-        if bool_log_kpca:
+        if bool_log_pca:
             file_cluster_out = './cluster_pca_file.npy'
         else:
             file_cluster_out = './cluster_file.npy'
@@ -122,7 +119,7 @@ if bool_kmeans:
     else:
         # If not training, load cluster means from .npy file in ./src folder.
         print('Loading cluster means...')
-        if bool_log_kpca:
+        if bool_log_pca:
             file_cluster_in = './cluster_pca_file.npy'
         else:
             file_cluster_in = './cluster_file.npy'
@@ -134,7 +131,7 @@ else:
 
 # Test model with metric given in configuration file.
 print('Testing...')
-rank_score, ma_prec = rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx,
+rank_score, ma_prec = rank_query(features, query_idx, gallery_idx, train_idx, file_list, labels, cam_idx,
                                  cluster_means=cluster_means, rank=rank, metric=metric, display=bool_display)
 print('Rank score is %.2f' % rank_score)
 print('Mean Average Precision is %.2f' % ma_prec)

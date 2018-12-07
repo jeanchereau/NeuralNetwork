@@ -1,52 +1,56 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix
 
 
-# Returns indices of k features closest to input feature according to given metric.
-def kmetric(x_s, x_data, metric=1, k=1):
-    rows, cols = x_data.shape
-
-    # metric: {'l1': 0, 'l2': 1, 'cos': 2, 'maha': 3, 'cheby': 4}
-    if metric == 0:
-        x_dist = np.sum(np.abs(x_data - x_s[None, :]), axis=1)
-    elif metric == 2:
-        numerator = x_s.dot(x_data.T)
-        denominator = np.linalg.norm(x_data, axis=1) * np.linalg.norm(x_s[None, :], axis=1)
-        x_dist = np.ones(rows) - numerator / denominator
-    elif metric == 3:
-        s_inv = np.linalg.inv(np.cov(x_data, ddof=0, rowvar=False))
-        x_dist = np.sqrt(np.diag((x_data - x_s[None, :]).dot(s_inv.dot((x_data - x_s[None, :]).T))))
-    elif metric == 4:
-        x_dist = np.max(np.abs(x_data - x_s[None, :]), axis=1)
-    else:
-        x_dist = np.linalg.norm(x_data - x_s[None, :], axis=1)
+def knn(x_s, x_data, k=1):
+    x_dist = np.linalg.norm(x_data - x_s[None, :], axis=1)
 
     idx = np.argsort(x_dist)[0:k]
 
     return idx
 
 
-def eigen_order(s, m=None):
-    lc, vc = np.linalg.eig(s)
+# Returns indices of k features closest to input feature according to given metric.
+def kmetric(x_s, x_data, quad_mat, k=1):
 
-    indices = np.argsort(np.abs(lc))[::-1]
+    x_dist = np.sqrt(np.diag((x_data - x_s[None, :]).dot(quad_mat.dot((x_data - x_s[None, :]).T))))
+
+    idx = np.argsort(x_dist)[0:k]
+
+    return idx
+
+
+def eigen_order(matrix, m=None):
+    lc, vc = np.linalg.eig(matrix)
+
+    indices = np.argsort(lc.real)[::-1]
 
     plt.figure()
-    plt.plot(np.abs(lc[indices]))
+    plt.plot(lc[indices].real)
     plt.title('Eigenvalues of principle components.')
 
-    v = np.abs(vc[:, indices])[:, 0:m]
+    v = vc[:, indices]
+    v = v[:, 0:m]
 
-    return v
+    return v.real
 
 
-def conf_mat(y_actu, y_pred):
-    cm = confusion_matrix(y_actu, y_pred)
+def result_display(rank, color, image_files):
+    color_dict = ['black', 'green', 'red']
+    w = rank + 3
+    h = 3
+    fig = plt.figure(figsize=(w, h))
+    cols = rank + 1
+    rows = 1
 
-    plt.figure()
-    plt.matshow(cm, cmap='Blues')
-    plt.colorbar()
-    plt.ylabel('Actual id')
-    plt.xlabel('Predicted id')
+    i = 0
+    for image_file in image_files:
+        image = plt.imread('../pr_data/images_cuhk03/' + image_file[0])
+        ax = fig.add_subplot(rows, cols, i+1)
+        plt.imshow(image, aspect='auto')
+        plt.setp(ax.spines.values(), color=color_dict[color[i]], linewidth=3)
+        ax.tick_params(bottom=False, top=False, left=False, right=False,
+                       labelbottom=False, labeltop=False, labelleft=False, labelright=False)
+        i += 1
+
     plt.show()

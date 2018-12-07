@@ -1,5 +1,6 @@
 import numpy as np
 from functions import eigen_order
+from sklearn.cluster import KMeans
 
 
 def pca(features, m_pca=None):
@@ -16,6 +17,3 @@ def pca(features, m_pca=None):
 
     return u, mu
 
-
-def kernel():
-    pass
