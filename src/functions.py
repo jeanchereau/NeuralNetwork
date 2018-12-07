@@ -67,5 +67,5 @@ def f_measure(prec, recall):
 
     ax.semilogx(beta, f)
     ax.grid()
-
+    plt.title('F Measure')
     plt.show()

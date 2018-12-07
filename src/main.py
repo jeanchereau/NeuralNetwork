@@ -4,7 +4,7 @@ import yaml
 from scipy.io import loadmat
 from sklearn.cluster import KMeans
 from train import set_feat_train, set_feat_train_valid
-from test import rank_query
+from test import rank_query, set_feat_test
 from model import pca, optimize_metric
 from functions import f_measure
 
@@ -22,6 +22,7 @@ for section in cfg:
             n_clusters_valid = attr[1].get('N_CLUSTERS_VALID')
             n_clusters_train = attr[1].get('N_CLUSTERS_TRAIN')
             n_clusters_test = attr[1].get('N_CLUSTERS_TEST')
+            bool_transform = attr[1].get('TRANSFORM')
         elif attr[0] == 'METRIC':
             bool_metric_train = attr[1].get('TRAIN')
             bool_pca = attr[1].get('PCA')
@@ -73,9 +74,9 @@ if bool_metric_train:
 
     feat_train, feat_valid, valid_idx = set_feat_train_valid(features, train_idx, n_clusters_valid, labels)
 
-    NULL, n_iter = optimize_metric(feat_valid)    # TODO: Optimize metric in model.py
+    NULL, n_iter = optimize_metric(feat_valid, labels[valid_idx])    # TODO: Optimize metric in model.py
 
-    g_mat, n_iter = optimize_metric(feat_train, max_iter=n_iter)
+    g_mat, n_iter = optimize_metric(feat_train, train_idx, max_iter=n_iter)
 
     np.save(file_metric_out, g_mat)
 
@@ -86,64 +87,48 @@ else:
         file_features_in = '../pr_data/feature_pca_data.json'
         file_metric_in = './metric_pca_file.npy'
     else:
-
+        file_features_in = '../pr_data/feature_data.json'
         file_metric_in = './metric_file.npy'
 
-    with open('../pr_data/feature_pca_data.json', 'r') as infile:
+    with open(file_features_in, 'r') as infile:
         features = json.load(infile)
 
     g_mat = np.load(file_metric_in, 'r')
 
+print('Applying metric on all features...')
+features_proj = np.array(features).dot(g_mat.T)
+
+
 print('Testing...')
-rank_score, avg_prec, avg_recall = rank_query(features, query_idx, gallery_idx, train_idx, file_list, labels, cam_idx,
+rank_score, avg_prec, avg_recall = rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx,
                                               rank=rank, display=bool_display)
 print('Rank score is %.2f' % rank_score)
 print('Mean Average Precision is %.2f' % avg_prec)
 print('Mean Average Recall is %.2f' % avg_recall)
+
 f_measure(avg_prec, avg_recall)
-print('Done!')
 
+print('Done with metric!')
 
-            feat_train, feat_valid, valid_idx = set_feat_train_valid(features, train_idx,
-                                                                     n_clusters, n_clusters_valid, labels)
+if bool_cluster:
+    print('Clustering testing set using metric...')
+    feat_test, test_idx = set_feat_test(features, query_idx, gallery_idx)
 
-            # Apply K-Means on validation set.
-            k_means = KMeans(n_clusters=n_clusters_valid, init='random', n_init=2, n_jobs=2)
-            k_means.fit(feat_valid)
+    k_means = KMeans(n_clusters=n_clusters_test, init='random', n_init=n_init, n_jobs=4)
+    k_means.fit(feat_test)
+    cluster_means = k_means.cluster_centers_
 
-            # Get number of iterations for convergence of cluster means with validation set.
-            n_iter = k_means.n_iter_
-
-            # Apply K-Means on entire training set with maximum iterations n_iter.
-            print('-- Final training...')
-            k_means = KMeans(n_clusters=n_clusters, init='random', n_init=n_init, n_jobs=4, max_iter=n_iter)
-            k_means.fit(feat_train)
-
-        else:
-            # If not applying validation, apply K-Means on entire training set.
-            feat_train = set_feat_train(features, train_idx)
-
-            k_means = KMeans(n_clusters=n_clusters, init='random', n_init=n_init, n_jobs=4)
-            k_means.fit(feat_train)
-
-        # Save cluster means to .npy file in ./src folder.
-        print('-- Saving cluster means...')
-        if bool_log_pca:
-            file_cluster_out = './cluster_pca_file.npy'
-        else:
-            file_cluster_out = './cluster_file.npy'
-
-        cluster_means = k_means.cluster_centers_
-        np.save(file_cluster_out, cluster_means)
-
+    if bool_pca:
+        file_cluster_means_out = './cluster_means_pca_file.npy'
     else:
-        # If not training, load cluster means from .npy file in ./src folder.
-        print('Loading cluster means...')
-        if bool_log_pca:
-            file_cluster_in = './cluster_pca_file.npy'
-        else:
-            file_cluster_in = './cluster_file.npy'
+        file_cluster_means_out = './cluster_means_file.npy'
 
-        cluster_means = np.array(np.load(file_cluster_in, 'r')).tolist()
+    np.save(file_cluster_means_out, cluster_means)
+
 else:
-    cluster_means = None
+    if bool_pca:
+        file_cluster_means_in = './cluster_means_pca_file.npy'
+    else:
+        file_cluster_means_in = './cluster_means_file.npy'
+
+    cluster_means = np.array(np.load(file_cluster_means_in, 'r')).tolist()

@@ -2,6 +2,18 @@ import numpy as np
 from functions import knn, result_display
 
 
+def set_feat_test(features, query_idx, gallery_idx):
+    feat_test = []
+
+    test_idx = np.concatenate((query_idx, gallery_idx), axis=None)
+    test_idx = np.sort(test_idx, axis=None)
+
+    for idx in test_idx:
+        feat_test.append(features[idx])
+
+    return feat_test, test_idx
+
+
 # Partitions features related to query and features related to gallery.
 def set_feat_query_gallery(features, query_idx, gallery_idx):
     feat_query, feat_gallery = [], []
@@ -27,6 +39,9 @@ def rem_feat_cam_label(feat_gallery, gallery_idx, query_id, cam_id, labels, cam_
             feat_gall_cam_rem.append(feat_gallery[i])
             gall_cam_rem_idx = np.append(gall_cam_rem_idx, idx, axis=None)
 
+            if labels[idx] == query_id:
+                n_docs += 1
+
         i += 1
 
     return feat_gall_cam_rem, gall_cam_rem_idx, n_docs
@@ -43,7 +58,7 @@ def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, ran
     color = np.zeros(rank+1, dtype=int)
     i = 0
     for idx in query_idx:
-        tp, fp, fn = 0, 0, 0
+        tp, fp = 0, 0
 
         query_id = labels[idx]
         cam_id = cam_idx[idx]
@@ -66,7 +81,7 @@ def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, ran
                 fp += 1
 
         avg_prec[i] = tp / (tp + fp)
-        avg_recall[i] = tp / (tp + fn)
+        avg_recall[i] = tp / n_docs
 
         print('-- Query:', query_id, '/ Gallery:', gallery_id, '/ Retrieval:', rank_score[i])
         if display:
@@ -79,6 +94,3 @@ def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, ran
     avg_recall = np.mean(avg_prec, axis=None)
 
     return rank_score, avg_prec, avg_recall
-
-
-

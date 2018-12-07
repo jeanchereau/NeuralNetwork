@@ -5,6 +5,7 @@
     N_CLUSTERS_VALID: 100               # Number of clusters used for validation - DO NOT edit.
     N_CLUSTERS_TRAIN: 667                    # Number of clusters we expect to find in given feature set - DO NOT edit.
     N_CLUSTERS_TEST: 700
+    TRANSFORM: False
 - METRIC:                        # Baseline parameters for dimension reduction & spreading of data.
     TRAIN: True
     PCA: False                          # Whether to apply PCA on the feature set or not - Performed before clustering.

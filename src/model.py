@@ -18,7 +18,7 @@ def pca(features, m_pca=None):
     return u, mu
 
 
-def optimize_metric(features, max_iter=300):
+def optimize_metric(features, labels, max_iter=300):
     rows, cols = features.shape
     quad_mat = np.zeros((cols, cols))
     n_iter = 0
