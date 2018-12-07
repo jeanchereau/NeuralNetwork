@@ -38,17 +38,14 @@ def compute_f(features, labels, quad_mat):
 
     f, df = 0, np.zeros((cols, cols))
     for i in range(0, rows-1):
-        j_set = np.array([], dtype=int)
         for j in range(i+1, rows):
             if labels[i] == labels[j]:
-                j_set = np.append(j_set, j, axis=None)
+                y = features[i, :] - features[j, :]
+                f += y.dot(quad_mat.dot(y.T))
+                df += y.T.dot(y)
             else:
                 break
-        if j_set.size > 0:
-            y = features[j_set, :] - features[i, :]
-            f += np.trace(y.dot(quad_mat.dot(y.T)))
-            df += np.trace(y.T.dot(y))
-                
+
     return f, df
 
 
@@ -68,19 +65,32 @@ def optimize_metric(features, labels, max_iter=300):
 
     n_iter = 0
     while eps > tol and n_iter < max_iter:
+        print(quad_mat)
 
-        f = 2
-        while f > 1:
+        f, df = compute_f(features, labels, quad_mat)
+        while f > 230:
+            print(f)
+            quad_mat = quad_mat / np.trace(quad_mat)
+            lc, vc = np.linalg.eig(quad_mat)
+            l, v = lc.real, vc.real
+            l_idx = np.argwhere(l < 0)
+            l[l_idx] = 0
+            quad_mat = v.T.dot(np.diag(l).dot(v))
+            
             f, df = compute_f(features, labels, quad_mat)
+
+        print('yo')
 
         g, dg = compute_g(features, labels, quad_mat)
 
+        print('hi')
+
         if quad_mat_pre is None or dg_pre is None:
             alpha = 1
+            quad_mat_nxt = quad_mat + alpha * dg
         else:
             alpha = (quad_mat - quad_mat_pre).T.dot(dg - dg_pre) / eps
-
-        quad_mat_nxt = quad_mat + alpha * dg
+            quad_mat_nxt = quad_mat + alpha.dot(dg)
 
         dg_pre = dg
         eps = np.linalg.norm(quad_mat_nxt - quad_mat, ord='fro')
@@ -88,6 +98,7 @@ def optimize_metric(features, labels, max_iter=300):
         quad_mat = quad_mat_nxt
 
         n_iter += 1
+        print(n_iter)
 
     g_mat = np.linalg.cholesky(quad_mat)
 
