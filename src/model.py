@@ -1,6 +1,5 @@
 import numpy as np
 from functions import eigen_order
-from sklearn.cluster import KMeans
 
 
 def pca(features, m_pca=None):
@@ -20,15 +19,20 @@ def pca(features, m_pca=None):
 
 def compute_g(features, labels, quad_mat):
     rows, cols = features.shape
+    clusters = np.unique(labels).size
 
     g, dg = 0, np.zeros((cols, cols))
     for i in range(0, rows-1):
+        print('happies')
         for j in range(i+1, rows):
             if labels[i] != labels[j]:
                 y = features[i, :] - features[j, :]
-                dist = np.sqrt(y.dot(quad_mat.dot(y.T)))
+                dist = np.sqrt(y[None, :].dot(quad_mat.dot(y[:, None])))
                 g += dist
-                dg += y.T.dot(y) / (2 * dist)
+                dg += y[:, None].dot(y[None, :]) / (2 * dist)
+
+    g = g / clusters
+    dg = dg / clusters
 
     return g, dg
 
@@ -36,23 +40,32 @@ def compute_g(features, labels, quad_mat):
 def compute_f(features, labels, quad_mat):
     rows, cols = features.shape
 
+    clusters = np.unique(labels).size
+
     f, df = 0, np.zeros((cols, cols))
     for i in range(0, rows-1):
         for j in range(i+1, rows):
             if labels[i] == labels[j]:
                 y = features[i, :] - features[j, :]
-                f += y.dot(quad_mat.dot(y.T))
-                df += y.T.dot(y)
+                f += y[None, :].dot(quad_mat.dot(y[:, None]))
+                df += y[:, None].dot(y[None, :])
             else:
                 break
 
+    f = f / clusters
+    df = df / clusters
+
     return f, df
+
+
+def qp_solve():
+    pass
 
 
 def optimize_metric(features, labels, max_iter=300):
     rows, cols = features.shape
 
-    quad_mat = np.random.rand(cols, cols)
+    quad_mat = np.random.randn(cols, cols)
     quad_mat = quad_mat.dot(quad_mat.T)
     quad_mat = quad_mat / np.trace(quad_mat)
 
@@ -68,25 +81,23 @@ def optimize_metric(features, labels, max_iter=300):
         print(quad_mat)
 
         f, df = compute_f(features, labels, quad_mat)
-        while f > 230:
+        while f > 10:
             print(f)
             quad_mat = quad_mat / np.trace(quad_mat)
+            # u = quad_mat.flatten()
+            
             lc, vc = np.linalg.eig(quad_mat)
             l, v = lc.real, vc.real
             l_idx = np.argwhere(l < 0)
             l[l_idx] = 0
             quad_mat = v.T.dot(np.diag(l).dot(v))
-            
             f, df = compute_f(features, labels, quad_mat)
 
         print('yo')
-
         g, dg = compute_g(features, labels, quad_mat)
-
         print('hi')
-
         if quad_mat_pre is None or dg_pre is None:
-            alpha = 1
+            alpha = 0.1
             quad_mat_nxt = quad_mat + alpha * dg
         else:
             alpha = (quad_mat - quad_mat_pre).T.dot(dg - dg_pre) / eps
