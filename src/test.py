@@ -69,7 +69,7 @@ def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, ran
         if cluster_means is None:
             k_idx = knn(np.array(features[idx]), np.array(feat_gall_cam_rem), k=rank)
         else:
-            cluster_idx = knn(np.array(features[idx]), np.array(cluster_means))
+            cluster_idx = np.asscalar(knn(np.array(features[idx]), np.array(cluster_means)))
             k_idx = knn(np.array(cluster_means[cluster_idx]), np.array(feat_gall_cam_rem), k=rank)
 
         gallery_id = labels[gall_cam_rem_idx[k_idx]]
@@ -95,6 +95,6 @@ def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, ran
 
     rank_score = np.mean(rank_score, axis=None)
     avg_prec = np.mean(avg_prec, axis=None)
-    avg_recall = np.mean(avg_prec, axis=None)
+    avg_recall = np.mean(avg_recall, axis=None)
 
     return rank_score, avg_prec, avg_recall

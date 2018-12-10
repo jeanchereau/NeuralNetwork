@@ -3,6 +3,7 @@ import json
 import yaml
 from scipy.io import loadmat
 from sklearn.cluster import KMeans
+from sklearn.decomposition import KernelPCA
 from train import set_feat_train, set_feat_train_valid
 from test import rank_query, set_feat_test
 from model import pca, optimize_metric
@@ -25,8 +26,8 @@ for section in cfg:
             bool_transform = attr[1].get('TRANSFORM')
         elif attr[0] == 'METRIC':
             bool_metric_train = attr[1].get('METRIC_TRAIN')
-            bool_pca_train = attr[1].get('PCA_TRAIN')
-            bool_pca = attr[1].get('PCA')
+            bool_kpca_train = attr[1].get('KPCA_TRAIN')
+            bool_kpca = attr[1].get('KPCA')
             m_pca = attr[1].get('M_PCA')
         elif attr[0] == 'CLUSTERING':
             bool_cluster = attr[1].get('CLUSTER')
@@ -54,28 +55,29 @@ if bool_transform:
         # Loading Features and Indices for Training, Query & Gallery
         print('Loading feature data...')
 
-        if bool_pca:
-            if bool_pca_train:
+        if bool_kpca:
+            if bool_kpca_train:
                 with open('../pr_data/feature_data.json', 'r') as infile:
                     features = json.load(infile)
 
                 feat_train = set_feat_train(features, train_idx)
 
-                print('Applying PCA...')
-                u_pca, mu_pca = pca(np.array(feat_train), m_pca=m_pca)
+                print('Applying Kernel PCA...')
+                k_pca = KernelPCA(n_components=m_pca, kernel='poly', n_jobs=4)
+                k_pca.fit(np.array(feat_train))
 
                 features_proj = (np.array(features) - mu_pca[None, :]).dot(u_pca)
 
                 features = features_proj.tolist()
 
-                with open('../pr_data/feature_pca_data.json', 'w') as outfile:
+                with open('../pr_data/feature_kpca_data.json', 'w') as outfile:
                     json.dump(features, outfile)
 
             else:
-                with open('../pr_data/feature_pca_data.json', 'r') as infile:
+                with open('../pr_data/feature_kpca_data.json', 'r') as infile:
                     features = json.load(infile)
 
-            file_metric_out = './metric_pca_file.npy'
+            file_metric_out = './metric_kpca_file.npy'
 
         else:
             file_metric_out = './metric_file.npy'
@@ -84,7 +86,7 @@ if bool_transform:
 
         print('Training metric...')
         print('-- Validating')
-        g_mat, n_iter = optimize_metric(np.array(feat_valid), labels[valid_idx])    # TODO: Optimize metric in model.py
+        g_mat, n_iter = optimize_metric(np.array(feat_valid), labels[valid_idx])
 
         print('-- Final Training')
         # g_mat, n_iter = optimize_metric(np.array(feat_train), labels[train_idx], max_iter=n_iter)
@@ -94,9 +96,9 @@ if bool_transform:
     else:
 
         print('Loading feature data...')
-        if bool_pca:
-            file_features_in = '../pr_data/feature_pca_data.json'
-            file_metric_in = './metric_pca_file.npy'
+        if bool_kpca:
+            file_features_in = '../pr_data/feature_kpca_data.json'
+            file_metric_in = './metric_kpca_file.npy'
         else:
             file_features_in = '../pr_data/feature_data.json'
             file_metric_in = './metric_file.npy'
