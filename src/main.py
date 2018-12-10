@@ -24,7 +24,8 @@ for section in cfg:
             n_clusters_test = attr[1].get('N_CLUSTERS_TEST')
             bool_transform = attr[1].get('TRANSFORM')
         elif attr[0] == 'METRIC':
-            bool_metric_train = attr[1].get('TRAIN')
+            bool_metric_train = attr[1].get('METRIC_TRAIN')
+            bool_pca_train = attr[1].get('PCA_TRAIN')
             bool_pca = attr[1].get('PCA')
             m_pca = attr[1].get('M_PCA')
         elif attr[0] == 'CLUSTERING':
@@ -52,23 +53,30 @@ if bool_transform:
     if bool_metric_train:
         # Loading Features and Indices for Training, Query & Gallery
         print('Loading feature data...')
-        with open('../pr_data/feature_data.json', 'r') as infile:
-            features = json.load(infile)
 
         if bool_pca:
-            feat_train = set_feat_train(features, train_idx)
+            if bool_pca_train:
+                with open('../pr_data/feature_data.json', 'r') as infile:
+                    features = json.load(infile)
 
-            print('Applying PCA...')
-            u_pca, mu_pca = pca(np.array(feat_train), m_pca=m_pca)
+                feat_train = set_feat_train(features, train_idx)
 
-            features_proj = (np.array(features) - mu_pca[None, :]).dot(u_pca)
+                print('Applying PCA...')
+                u_pca, mu_pca = pca(np.array(feat_train), m_pca=m_pca)
 
-            features = features_proj.tolist()
+                features_proj = (np.array(features) - mu_pca[None, :]).dot(u_pca)
 
-            with open('../pr_data/feature_pca_data.json', 'w') as outfile:
-                json.dump(features, outfile)
+                features = features_proj.tolist()
+
+                with open('../pr_data/feature_pca_data.json', 'w') as outfile:
+                    json.dump(features, outfile)
+
+            else:
+                with open('../pr_data/feature_pca_data.json', 'r') as infile:
+                    features = json.load(infile)
 
             file_metric_out = './metric_pca_file.npy'
+
         else:
             file_metric_out = './metric_file.npy'
 
