@@ -83,9 +83,11 @@ if bool_transform:
         feat_train, train_idx, feat_valid, valid_idx = set_feat_train_valid(features, train_idx, n_clusters_valid, labels)
 
         print('Training metric...')
-        NULL, n_iter = optimize_metric(np.array(feat_valid), labels[valid_idx])    # TODO: Optimize metric in model.py
+        print('-- Validating')
+        g_mat, n_iter = optimize_metric(np.array(feat_valid), labels[valid_idx])    # TODO: Optimize metric in model.py
 
-        g_mat, n_iter = optimize_metric(np.array(feat_train), labels[train_idx], max_iter=n_iter)
+        print('-- Final Training')
+        # g_mat, n_iter = optimize_metric(np.array(feat_train), labels[train_idx], max_iter=n_iter)
 
         np.save(file_metric_out, g_mat)
 

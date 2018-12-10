@@ -58,7 +58,7 @@ def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, ran
     color = np.zeros(rank+1, dtype=int)
     i = 0
     for idx in query_idx:
-        tp, fp = 0, 0
+        tp, fp = 0.0, 0.0
 
         query_id = labels[idx]
         cam_id = cam_idx[idx]
