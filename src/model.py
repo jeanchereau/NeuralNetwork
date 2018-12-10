@@ -70,41 +70,33 @@ def qp_project(quad_mat, f, df, y):
 
 def optimize_metric(features, labels, max_iter=300):
     cols = features.shape[1]
-
+    g = 0
     quad_mat = np.random.randn(cols, cols)
     quad_mat = quad_mat.dot(quad_mat.T)
     quad_mat = quad_mat / np.trace(quad_mat)
 
-    quad_mat_pre = None
-    dg_pre = None
-
-    tol, eps, n_iter = 0.00001, 1, 0
+    tol, eps, n_iter = 0.1, 1, 0
     while eps > tol and n_iter < max_iter:
 
         f, df, y = compute_f(features, labels, quad_mat)
         while f > 1:
             print('Projecting...')
-            print('f =', f)
             quad_mat = qp_project(quad_mat, f, df, y)
 
             f, df, y = compute_f(features, labels, quad_mat)
+            print('g = ', g, '/ f =', f)
+            print(eps)
 
         print('Ascending...')
         g, dg = compute_g(features, labels, quad_mat)
-        if quad_mat_pre is None or dg_pre is None:
-            alpha = 1 / (cols * cols)
-            quad_mat_nxt = quad_mat + alpha * dg
-        else:
-            alpha = (quad_mat - quad_mat_pre).T.dot(dg - dg_pre) / eps
-            quad_mat_nxt = quad_mat + alpha.dot(dg)
+        alpha = 1e-11
+        quad_mat_nxt = quad_mat + alpha * dg
 
-        dg_pre = dg
-        eps = np.linalg.norm(quad_mat_nxt - quad_mat, ord='fro')
-        quad_mat_pre = quad_mat
+        eps = np.linalg.norm(quad_mat_nxt - quad_mat, ord='fro') / np.linalg.norm(quad_mat, ord='fro')
+
         quad_mat = quad_mat_nxt
 
         n_iter += 1
-        print(n_iter)
 
     g_mat = np.linalg.cholesky(quad_mat)
 
