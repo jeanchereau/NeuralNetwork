@@ -60,13 +60,18 @@ if bool_transform:
                 with open('../pr_data/feature_data.json', 'r') as infile:
                     features = json.load(infile)
 
-                feat_train = set_feat_train(features, train_idx)
+                feat_train = np.array(set_feat_train(features, train_idx))
+                mu = np.mean(feat_train, axis=0)
 
                 print('Applying Kernel PCA...')
                 k_pca = KernelPCA(n_components=m_pca, kernel='poly', n_jobs=4)
-                k_pca.fit(np.array(feat_train))
+                k_pca.fit(feat_train - mu[None, :])
 
-                features_proj = (np.array(features) - mu_pca[None, :]).dot(u_pca)
+                alphas = k_pca.alphas_
+                lambdas = k_pca.lambdas_
+                d = np.sqrt(np.linalg.inv(np.diag(lambdas)))
+
+                features_proj = np.array(features - mu[None, :]).dot((feat_train - mu[None, :]).T.dot(alphas.dot(d)))
 
                 features = features_proj.tolist()
 
@@ -89,7 +94,8 @@ if bool_transform:
         g_mat, n_iter = optimize_metric(np.array(feat_valid), labels[valid_idx])
 
         print('-- Final Training')
-        # g_mat, n_iter = optimize_metric(np.array(feat_train), labels[train_idx], max_iter=n_iter)
+        # g_mat, n_iter = optimize_metric(np.array(feat_train), labels[train_idx], max_iter=n_iter,
+        # n_part=n_clusters_train // n_clusters_valid)
 
         np.save(file_metric_out, g_mat)
 
@@ -106,11 +112,11 @@ if bool_transform:
         with open(file_features_in, 'r') as infile:
             features = json.load(infile)
 
-        g_mat = np.load(file_metric_in, 'r')
+        # g_mat = np.load(file_metric_in, 'r')
 
     print('Applying metric on all features...')
-    features_proj = np.array(features).dot(g_mat.T)
-    features = features_proj.tolist()
+    # features_proj = np.array(features).dot(g_mat.T)
+    # features = features_proj.tolist()
 
 else:
     with open('../pr_data/feature_data.json', 'r') as infile:
@@ -135,16 +141,16 @@ if bool_cluster:
     k_means.fit(feat_test)
     cluster_means = k_means.cluster_centers_
 
-    if bool_pca:
-        file_cluster_means_out = './cluster_means_pca_file.npy'
+    if bool_kpca:
+        file_cluster_means_out = './cluster_means_kpca_file.npy'
     else:
         file_cluster_means_out = './cluster_means_file.npy'
 
     np.save(file_cluster_means_out, cluster_means)
 
 else:
-    if bool_pca:
-        file_cluster_means_in = './cluster_means_pca_file.npy'
+    if bool_kpca:
+        file_cluster_means_in = './cluster_means_kpca_file.npy'
     else:
         file_cluster_means_in = './cluster_means_file.npy'
 

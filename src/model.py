@@ -68,36 +68,43 @@ def qp_project(quad_mat, f, df, y):
     return quad_mat_nxt
 
 
-def optimize_metric(features, labels, max_iter=10):
+def optimize_metric(features, labels, max_iter=10, n_part=1):
     cols = features.shape[1]
     g = 0.0
-    alpha = 1e-13
+    alpha = 1e-14
 
-    quad_mat = np.random.randn(cols, cols)
-    quad_mat = quad_mat.dot(quad_mat.T)
-    quad_mat = quad_mat / np.trace(quad_mat)
+    quad_mat = np.zeros((cols, cols))
 
-    tol, eps, n_iter = 1e-4, 1, 0
-    while eps > tol and n_iter < max_iter:
+    for i in range(0, n_part):
+        quad_mat_tmp = np.random.randn(cols, cols)
+        quad_mat_tmp = quad_mat_tmp.dot(quad_mat_tmp.T)
+        quad_mat_tmp = quad_mat_tmp / np.trace(quad_mat_tmp)
 
-        f, df, y = compute_f(features, labels, quad_mat)
-        while np.abs(f - 1) > 1e-2:
-            print('Projecting...')
-            quad_mat = qp_project(quad_mat, f, df, y)
+        tol, eps, n_iter = 1e-3, 1, 0
+        while eps > tol and n_iter < max_iter:
 
-            f, df, y = compute_f(features, labels, quad_mat)
-            print('g = %.2f' % g, '/ f = %.2f' % f)
-            print('difference = %.5f' % eps)
+            f, df, y = compute_f(features, labels, quad_mat_tmp)
+            fp = 1
+            while np.abs(f - 1) > 1e-1:
+                print('Projecting...')
+                quad_mat_tmp = qp_project(quad_mat_tmp, f, df, y)
+                fp = f
+                f, df, y = compute_f(features, labels, quad_mat_tmp)
+                print('g = %.2f' % g, '/ f = %.2f' % f, '/ difference = %.5f' % eps)
 
-        print('Ascending...')
-        g, dg = compute_g(features, labels, quad_mat)
-        quad_mat_nxt = quad_mat + alpha * dg
+            print('Ascending...')
+            g, dg = compute_g(features, labels, quad_mat_tmp)
+            quad_mat_tmp_nxt = quad_mat_tmp + alpha * dg
 
-        eps = np.linalg.norm(quad_mat_nxt - quad_mat, ord='fro') / np.linalg.norm(quad_mat, ord='fro')
+            eps = np.linalg.norm(quad_mat_tmp_nxt - quad_mat_tmp, ord='fro') / np.linalg.norm(quad_mat_tmp, ord='fro')
 
-        quad_mat = quad_mat_nxt
+            quad_mat_tmp = quad_mat_tmp_nxt
 
-        n_iter += 1
+            n_iter += 1
+
+        quad_mat += quad_mat_tmp
+
+    quad_mat = quad_mat / n_part
 
     g_mat = np.linalg.cholesky(quad_mat)
 
