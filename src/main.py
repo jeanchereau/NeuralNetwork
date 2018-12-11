@@ -91,7 +91,7 @@ if bool_transform:
 
         print('Training metric...')
         print('-- Validating')
-        g_mat, n_iter = optimize_metric(np.array(feat_valid), labels[valid_idx])
+        g_mat, n_iter = optimize_metric(np.array(feat_valid), labels[valid_idx], obj_f=10)
 
         print('-- Final Training')
         # g_mat, n_iter = optimize_metric(np.array(feat_train), labels[train_idx], max_iter=n_iter,

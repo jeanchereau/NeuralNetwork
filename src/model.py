@@ -54,9 +54,9 @@ def compute_f(features, labels, quad_mat):
     return f, df, y
 
 
-def qp_project(quad_mat, f, df, y):
+def qp_project(quad_mat, f, df, y, obj_f):
 
-    lam = (f - 1) / (y.dot(y) * y.dot(y))
+    lam = (f - obj_f) / (y.dot(y) * y.dot(y))
     quad_mat_nxt = quad_mat - df * lam
 
     lc, vc = np.linalg.eig(quad_mat_nxt)
@@ -68,27 +68,25 @@ def qp_project(quad_mat, f, df, y):
     return quad_mat_nxt
 
 
-def optimize_metric(features, labels, max_iter=10, n_part=1):
+def optimize_metric(features, labels, max_iter=10, n_part=1, alpha=1e-14, tol=1e-3, tol_f=1e-1, obj_f=1):
     cols = features.shape[1]
-    g = 0.0
-    alpha = 1e-14
 
     quad_mat = np.zeros((cols, cols))
 
     for i in range(0, n_part):
+        # feat_tmp = features[1, :]
+
         quad_mat_tmp = np.random.randn(cols, cols)
         quad_mat_tmp = quad_mat_tmp.dot(quad_mat_tmp.T)
         quad_mat_tmp = quad_mat_tmp / np.trace(quad_mat_tmp)
 
-        tol, eps, n_iter = 1e-3, 1, 0
+        eps, n_iter, g = 1, 0, 0.0
         while eps > tol and n_iter < max_iter:
 
             f, df, y = compute_f(features, labels, quad_mat_tmp)
-            fp = 1
-            while np.abs(f - 1) > 1e-1:
+            while np.abs(f - obj_f) > tol_f:
                 print('Projecting...')
-                quad_mat_tmp = qp_project(quad_mat_tmp, f, df, y)
-                fp = f
+                quad_mat_tmp = qp_project(quad_mat_tmp, f, df, y, obj_f)
                 f, df, y = compute_f(features, labels, quad_mat_tmp)
                 print('g = %.2f' % g, '/ f = %.2f' % f, '/ difference = %.5f' % eps)
 
