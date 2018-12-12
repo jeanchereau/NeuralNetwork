@@ -85,13 +85,17 @@ if bool_transform:
             file_metric_out = './metric_kpca_file.npy'
 
         else:
+            with open('../pr_data/feature_data.json', 'r') as infile:
+                features = json.load(infile)
+
             file_metric_out = './metric_file.npy'
 
-        feat_train, train_idx, feat_valid, valid_idx = set_feat_train_valid(features, train_idx, n_clusters_valid, labels)
+        feat_train, train_idx, feat_valid, valid_idx = set_feat_train_valid(features, train_idx,
+                                                                            n_clusters_valid, labels)
 
         print('Training metric...')
         print('-- Validating')
-        g_mat, n_iter = optimize_metric(np.array(feat_valid), labels[valid_idx], tol_f=1e-2, obj_f=1, alpha=1e-13)
+        NULL, n_iter = optimize_metric(np.array(feat_valid), labels[valid_idx], alpha=1e-13)
 
         print('-- Final Training')
         g_mat, n_iter = optimize_metric(np.array(feat_train), labels[train_idx], max_iter=n_iter)
@@ -114,8 +118,8 @@ if bool_transform:
         g_mat = np.load(file_metric_in, 'r')
 
     print('Applying metric on all features...')
-    features_proj = np.array(features).dot(g_mat.T)
-    features = features_proj.tolist()
+    # features_proj = np.array(features).dot(g_mat.T)
+    # features = features_proj.tolist()
     print('Applied metric!!')
 
 else:

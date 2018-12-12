@@ -62,7 +62,7 @@ def qp_project(quad_u, y2, f, obj_f):
     return quad_u_nxt
 
 
-def optimize_metric(features, labels, max_iter=10, n_part=1, alpha=1e-14, tol=1e-3, tol_f=1e-1, obj_f=1):
+def optimize_metric(features, labels, max_iter=10, n_part=1, alpha=1e-14, tol=1e-3, tol_f=1e-2, obj_f=1):
     cols = features.shape[1]
 
     quad_u = np.zeros(cols)
