@@ -20,18 +20,19 @@ def pca(features, m_pca=None):
 def compute_dg(features, labels, quad_u):
     rows, cols = features.shape
 
-    dg = np.zeros(cols)
+    g, dg = 0, np.zeros(cols)
     for i in range(0, rows-1):
         for j in range(i+1, rows):
             if labels[i] != labels[j]:
                 y2 = np.square(features[i, :] - features[j, :])
                 dist = np.sqrt(quad_u.dot(y2))
+                g += dist
                 dg += y2 / (2 * dist)
 
-    c = np.unique(labels).size
+    c = 1 # np.unique(labels).size
     dg = dg / np.sqrt(c)
 
-    return dg
+    return g, dg
 
 
 def compute_sim_feat(features, labels):
@@ -45,7 +46,7 @@ def compute_sim_feat(features, labels):
             else:
                 break
 
-    c = np.unique(labels).size
+    c = 1 # np.unique(labels).size
     y2 = y2 / c
 
     return y2
@@ -62,40 +63,34 @@ def qp_project(quad_u, y2, f, obj_f):
     return quad_u_nxt
 
 
-def optimize_metric(features, labels, max_iter=10, n_part=1, alpha=1e-14, tol=1e-3, tol_f=1e-2, obj_f=1):
+def optimize_metric(features, labels, max_iter=10, alpha=1e-11, tol=1e-1, tol_f=1e-3, obj_f=1):
     cols = features.shape[1]
 
-    quad_u = np.zeros(cols)
-    for i in range(0, n_part):
+    quad_u = np.ones(cols) / cols
 
-        quad_u_tmp = np.random.rand(cols)
-        quad_u_tmp = quad_u_tmp / np.sum(quad_u_tmp)
+    y2 = compute_sim_feat(features, labels)
+    eps, n_iter, g = 1, 0, 0.0
+    while eps > tol and n_iter < max_iter:
 
-        y2 = compute_sim_feat(features, labels)
+        f, sub_iter = quad_u.dot(y2), 0
+        while np.abs(f - obj_f) > tol_f:
+            print('Projecting...')
+            quad_u = qp_project(quad_u, y2, f, obj_f)
+            f = quad_u.dot(y2)
+            sub_iter += 1
+            print('g = %.2f' % g, '/ f = %.2f' % f, '/ difference = %.5f' % eps)
 
-        eps, n_iter, g = 1, 0, 0.0
-        while eps > tol and n_iter < max_iter:
+        print('Ascending...')
+        print(np.count_nonzero(quad_u))
+        g, dg = compute_dg(features, labels, quad_u)
+        quad_u_nxt = quad_u + alpha * dg
 
-            f, sub_iter = quad_u_tmp.dot(y2), 0
-            while np.abs(f - obj_f) > tol_f:
-                print('Projecting...')
-                quad_u_tmp = qp_project(quad_u_tmp, y2, f, obj_f)
-                f = quad_u_tmp.dot(y2)
-                sub_iter += 1
-                print('g = %.2f' % g, '/ f = %.2f' % f, '/ difference = %.5f' % eps)
+        eps = np.linalg.norm(quad_u_nxt - quad_u) / np.linalg.norm(quad_u)
 
-            print('Ascending...')
-            dg = compute_dg(features, labels, quad_u_tmp)
-            quad_u_tmp_nxt = quad_u_tmp + alpha * dg
+        quad_u = quad_u_nxt
 
-            eps = np.linalg.norm(quad_u_tmp_nxt - quad_u_tmp) / np.linalg.norm(quad_u_tmp)
+        n_iter += 1
 
-            quad_u_tmp = quad_u_tmp_nxt
-
-            n_iter += 1
-
-        quad_u += quad_u_tmp
-
-    g_mat = np.sqrt(np.diag(quad_u / n_part))
+    g_mat = np.sqrt(np.diag(quad_u))
 
     return g_mat, n_iter

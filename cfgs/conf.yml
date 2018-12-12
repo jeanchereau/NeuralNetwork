@@ -7,10 +7,9 @@
     N_CLUSTERS_TEST: 700
     TRANSFORM: True
 - METRIC:                        # Baseline parameters for dimension reduction & spreading of data.
-    METRIC_TRAIN: True
-    KPCA_TRAIN: False
-    KPCA: False                          # Whether to apply PCA on the feature set or not - Performed before clustering.
-    M_PCA: 128                         # Mpca - can be integer (<= n_clusters - 1) or empty (= None).
+    METRIC_TRAIN: False
+    KPCA_TRAIN: True
+    M_PCA: 1024                         # Mpca - can be integer (<= n_clusters - 1) or empty (= None).
 - CLUSTERING:                       # Baseline parameters for training / clustering.
     CLUSTER: True                # Whether to train a clustered model or not. If not, load model from '.npy' file.
     N_INIT: 4                           # Number of ... . If 'KMEANS' is False, override.

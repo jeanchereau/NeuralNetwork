@@ -51,76 +51,55 @@ train_idx = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['train_
 train_idx = train_idx - 1
 
 if bool_transform:
+    # Loading Features and Indices for Training, Query & Gallery
+    print('Loading feature data...')
+
+    with open('../pr_data/feature_data.json', 'r') as infile:
+        features = json.load(infile)
+
     if bool_metric_train:
-        # Loading Features and Indices for Training, Query & Gallery
-        print('Loading feature data...')
-
-        if bool_kpca:
-            if bool_kpca_train:
-                with open('../pr_data/feature_data.json', 'r') as infile:
-                    features = json.load(infile)
-
-                feat_train = np.array(set_feat_train(features, train_idx))
-                mu = np.mean(feat_train, axis=0)
-
-                print('Applying Kernel PCA...')
-                k_pca = KernelPCA(n_components=m_pca, kernel='poly', n_jobs=4)
-                k_pca.fit(feat_train - mu[None, :])
-
-                alphas = k_pca.alphas_
-                lambdas = k_pca.lambdas_
-                d = np.sqrt(np.linalg.inv(np.diag(lambdas)))
-
-                features_proj = np.array(features).dot((feat_train - mu[None, :]).T.dot(alphas.dot(d)))
-
-                features = features_proj.tolist()
-
-                with open('../pr_data/feature_kpca_data.json', 'w') as outfile:
-                    json.dump(features, outfile)
-
-            else:
-                with open('../pr_data/feature_kpca_data.json', 'r') as infile:
-                    features = json.load(infile)
-
-            file_metric_out = './metric_kpca_file.npy'
-
-        else:
-            with open('../pr_data/feature_data.json', 'r') as infile:
-                features = json.load(infile)
-
-            file_metric_out = './metric_file.npy'
-
         feat_train, train_idx, feat_valid, valid_idx = set_feat_train_valid(features, train_idx,
                                                                             n_clusters_valid, labels)
 
         print('Training metric...')
         print('-- Validating')
-        NULL, n_iter = optimize_metric(np.array(feat_valid), labels[valid_idx], alpha=1e-13)
+        NULL, n_iter = optimize_metric(np.array(feat_valid), labels[valid_idx])
 
         print('-- Final Training')
-        g_mat, n_iter = optimize_metric(np.array(feat_train), labels[train_idx], max_iter=n_iter)
+        g_mat, n_iter = optimize_metric(np.array(feat_train), labels[train_idx], max_iter=n_iter, obj_f=10   )
 
-        np.save(file_metric_out, g_mat)
+        np.save('./metric_file.npy', g_mat)
 
     else:
-
-        print('Loading feature data...')
-        if bool_kpca:
-            file_features_in = '../pr_data/feature_kpca_data.json'
-            file_metric_in = './metric_kpca_file.npy'
-        else:
-            file_features_in = '../pr_data/feature_data.json'
-            file_metric_in = './metric_file.npy'
-
-        with open(file_features_in, 'r') as infile:
-            features = json.load(infile)
-
-        g_mat = np.load(file_metric_in, 'r')
+        g_mat = np.load('./metric_file.npy', 'r')
 
     print('Applying metric on all features...')
-    # features_proj = np.array(features).dot(g_mat.T)
-    # features = features_proj.tolist()
+    features_proj = np.array(features).dot(g_mat.T)
+    features = features_proj.tolist()
     print('Applied metric!!')
+
+    if bool_kpca_train:
+        feat_train = np.array(set_feat_train(features, train_idx))
+        mu = np.mean(feat_train, axis=0)
+
+        print('Applying Kernel PCA...')
+        k_pca = KernelPCA(n_components=m_pca, kernel='poly', n_jobs=4)
+        k_pca.fit(feat_train)
+
+        alphas = k_pca.alphas_
+        lambdas = k_pca.lambdas_
+        d = np.sqrt(np.linalg.inv(np.diag(lambdas)))
+
+        features_proj = np.array(features).dot((feat_train - mu[None, :]).T.dot(alphas.dot(d)))
+
+        features = features_proj.tolist()
+
+        with open('../pr_data/feature_transformed_data.json', 'w') as outfile:
+            json.dump(features, outfile)
+
+    else:
+        with open('../pr_data/feature_transformed_data.json', 'r') as infile:
+            features = json.load(infile)
 
 else:
     with open('../pr_data/feature_data.json', 'r') as infile:
