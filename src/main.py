@@ -71,7 +71,7 @@ if bool_transform:
                 lambdas = k_pca.lambdas_
                 d = np.sqrt(np.linalg.inv(np.diag(lambdas)))
 
-                features_proj = np.array(features - mu[None, :]).dot((feat_train - mu[None, :]).T.dot(alphas.dot(d)))
+                features_proj = np.array(features).dot((feat_train - mu[None, :]).T.dot(alphas.dot(d)))
 
                 features = features_proj.tolist()
 
@@ -91,11 +91,10 @@ if bool_transform:
 
         print('Training metric...')
         print('-- Validating')
-        g_mat, n_iter = optimize_metric(np.array(feat_valid), labels[valid_idx], obj_f=10)
+        g_mat, n_iter = optimize_metric(np.array(feat_valid), labels[valid_idx], tol_f=1e-2, obj_f=1, alpha=1e-13)
 
         print('-- Final Training')
-        # g_mat, n_iter = optimize_metric(np.array(feat_train), labels[train_idx], max_iter=n_iter,
-        # n_part=n_clusters_train // n_clusters_valid)
+        g_mat, n_iter = optimize_metric(np.array(feat_train), labels[train_idx], max_iter=n_iter)
 
         np.save(file_metric_out, g_mat)
 
@@ -112,11 +111,12 @@ if bool_transform:
         with open(file_features_in, 'r') as infile:
             features = json.load(infile)
 
-        # g_mat = np.load(file_metric_in, 'r')
+        g_mat = np.load(file_metric_in, 'r')
 
     print('Applying metric on all features...')
-    # features_proj = np.array(features).dot(g_mat.T)
-    # features = features_proj.tolist()
+    features_proj = np.array(features).dot(g_mat.T)
+    features = features_proj.tolist()
+    print('Applied metric!!')
 
 else:
     with open('../pr_data/feature_data.json', 'r') as infile:
