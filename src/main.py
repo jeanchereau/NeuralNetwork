@@ -3,11 +3,9 @@ import json
 import yaml
 from scipy.io import loadmat
 from sklearn.cluster import KMeans
-from sklearn.decomposition import KernelPCA
 from train import set_feat_train, set_feat_train_valid
 from test import rank_query, set_feat_test
 from model import pca, optimize_metric
-from functions import f_measure
 
 
 # Read configurations file in './cfgs'
@@ -26,9 +24,7 @@ for section in cfg:
             bool_transform = attr[1].get('TRANSFORM')
         elif attr[0] == 'METRIC':
             bool_metric_train = attr[1].get('METRIC_TRAIN')
-            bool_kpca_train = attr[1].get('KPCA_TRAIN')
-            bool_kpca = attr[1].get('KPCA')
-            m_kpca = attr[1].get('M_KPCA')
+            m_pca = attr[1].get('M_PCA')
         elif attr[0] == 'CLUSTERING':
             bool_cluster = attr[1].get('CLUSTER')
             n_init = attr[1].get('N_INIT')
@@ -50,13 +46,12 @@ query_idx = query_idx - 1
 train_idx = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['train_idx'].flatten()
 train_idx = train_idx - 1
 
+# Loading Features and Indices for Training, Query & Gallery
+print('Loading feature data...')
+with open('../pr_data/feature_data.json', 'r') as infile:
+    features = json.load(infile)
+
 if bool_transform:
-    # Loading Features and Indices for Training, Query & Gallery
-    print('Loading feature data...')
-
-    with open('../pr_data/feature_data.json', 'r') as infile:
-        features = json.load(infile)
-
     if bool_metric_train:
         feat_train, train_idx, feat_valid, valid_idx = set_feat_train_valid(features, train_idx,
                                                                             n_clusters_valid, labels)
@@ -69,49 +64,26 @@ if bool_transform:
         g_mat, n_iter = optimize_metric(np.array(feat_train), labels[train_idx], max_iter=n_iter, obj_f=10)
 
         np.save('./metric_file.npy', g_mat)
-
     else:
         g_mat = np.load('./metric_file.npy', 'r')
 
     print('Applying metric on all features...')
     features_proj = np.array(features).dot(g_mat.T)
     features = features_proj.tolist()
-    print('Applied metric!!')
 
-    if bool_kpca_train:
-        feat_train = np.array(set_feat_train(features, train_idx))
+    feat_train = np.array(set_feat_train(features, train_idx))
 
-        print('Applying PCA...')
-        # k_pca = KernelPCA(n_components=m_kpca, kernel='poly', degree=4, coef0=16, n_jobs=4)
-        # k_pca.fit(feat_train)
-        u_pca, mu_pca = pca(feat_train, m_pca=m_kpca)
-        features_proj = (np.array(features) - mu_pca[None, :]).dot(u_pca)
-        # alphas = k_pca.alphas_
-        # lambdas = k_pca.lambdas_
-        # d = np.sqrt(np.linalg.inv(np.diag(lambdas)))
+    print('Applying PCA...')
+    u_pca, mu_pca = pca(feat_train, m_pca=m_pca)
+    features_proj = (np.array(features) - mu_pca[None, :]).dot(u_pca)
+    features = features_proj.tolist()
 
-        # features_proj = np.array(features).dot((feat_train - mu[None, :]).T.dot(alphas.dot(d)))
-
-        features = features_proj.tolist()
-
-        with open('../pr_data/feature_transformed_data.json', 'w') as outfile:
-            json.dump(features, outfile)
-
-
-else:
-    with open('../pr_data/feature_data.json', 'r') as infile:
-        features = json.load(infile)
 
 print('Testing...')
-rank_score, avg_prec, avg_recall = rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx,
-                                              rank=rank, display=bool_display)
+rank_score = rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, rank=rank, display=bool_display)
 print('Rank score is %.2f' % rank_score)
-print('Mean Average Precision is %.2f' % avg_prec)
-print('Mean Average Recall is %.2f' % avg_recall)
-
-f_measure(avg_prec, avg_recall)
-
 print('Done with metric!')
+
 
 if bool_cluster:
     print('Clustering testing set...')
@@ -121,28 +93,14 @@ if bool_cluster:
     k_means.fit(feat_test)
     cluster_means = k_means.cluster_centers_
 
-    if bool_kpca:
-        file_cluster_means_out = './cluster_means_kpca_file.npy'
+    if bool_transform:
+        file_cluster_means_out = './cluster_means_transformed_file.npy'
     else:
         file_cluster_means_out = './cluster_means_file.npy'
 
     np.save(file_cluster_means_out, cluster_means)
 
-else:
-    if bool_kpca:
-        file_cluster_means_in = './cluster_means_kpca_file.npy'
-    else:
-        file_cluster_means_in = './cluster_means_file.npy'
-
-    cluster_means = np.array(np.load(file_cluster_means_in, 'r')).tolist()
-
-print('Testing...')
-rank_score, avg_prec, avg_recall = rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx,
-                                              rank=rank, display=bool_display, cluster_means=cluster_means)
-print('Rank score is %.2f' % rank_score)
-print('Mean Average Precision is %.2f' % avg_prec)
-print('Mean Average Recall is %.2f' % avg_recall)
-
-f_measure(avg_prec, avg_recall)
-
-print('Done with metric!')
+    print('Testing...')
+    rank_score = rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, rank=rank,
+                            display=bool_display, cluster_means=cluster_means)
+    print('Rank score is %.2f' % rank_score)

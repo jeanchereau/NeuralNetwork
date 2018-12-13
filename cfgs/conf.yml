@@ -1,16 +1,14 @@
 - BASE:                             # Baseline parameters for testing.
     RANK: 9                          # Number of elements in gallery closest to query.
-    DISPLAY: False                      # Whether to display the results for each query - Recommended for debugging.
+    DISPLAY: True                      # Whether to display the results for each query - Recommended for debugging.
     N_CLUSTERS: 1467
     N_CLUSTERS_VALID: 100               # Number of clusters used for validation - DO NOT edit.
     N_CLUSTERS_TRAIN: 667                    # Number of clusters we expect to find in given feature set - DO NOT edit.
     N_CLUSTERS_TEST: 700
     TRANSFORM: True
 - METRIC:                        # Baseline parameters for dimension reduction & spreading of data.
-    METRIC_TRAIN: False
-    KPCA_TRAIN: True
-    M_KPCA: 128                         # Mpca - can be integer (<= n_clusters - 1) or empty (= None).
+    METRIC_TRAIN: True
+    M_PCA: 128                         # Mpca - can be integer (<= n_clusters - 1) or empty (= None).
 - CLUSTERING:                       # Baseline parameters for training / clustering.
     CLUSTER: True                # Whether to train a clustered model or not. If not, load model from '.npy' file.
     N_INIT: 4                           # Number of ... . If 'KMEANS' is False, override.
-
