@@ -28,7 +28,7 @@ for section in cfg:
             bool_metric_train = attr[1].get('METRIC_TRAIN')
             bool_kpca_train = attr[1].get('KPCA_TRAIN')
             bool_kpca = attr[1].get('KPCA')
-            m_pca = attr[1].get('M_PCA')
+            m_kpca = attr[1].get('M_KPCA')
         elif attr[0] == 'CLUSTERING':
             bool_cluster = attr[1].get('CLUSTER')
             n_init = attr[1].get('N_INIT')
@@ -66,7 +66,7 @@ if bool_transform:
         NULL, n_iter = optimize_metric(np.array(feat_valid), labels[valid_idx])
 
         print('-- Final Training')
-        g_mat, n_iter = optimize_metric(np.array(feat_train), labels[train_idx], max_iter=n_iter, obj_f=10   )
+        g_mat, n_iter = optimize_metric(np.array(feat_train), labels[train_idx], max_iter=n_iter, obj_f=10)
 
         np.save('./metric_file.npy', g_mat)
 
@@ -80,26 +80,23 @@ if bool_transform:
 
     if bool_kpca_train:
         feat_train = np.array(set_feat_train(features, train_idx))
-        mu = np.mean(feat_train, axis=0)
 
-        print('Applying Kernel PCA...')
-        k_pca = KernelPCA(n_components=m_pca, kernel='poly', n_jobs=4)
-        k_pca.fit(feat_train)
+        print('Applying PCA...')
+        # k_pca = KernelPCA(n_components=m_kpca, kernel='poly', degree=4, coef0=16, n_jobs=4)
+        # k_pca.fit(feat_train)
+        u_pca, mu_pca = pca(feat_train, m_pca=m_kpca)
+        features_proj = (np.array(features) - mu_pca[None, :]).dot(u_pca)
+        # alphas = k_pca.alphas_
+        # lambdas = k_pca.lambdas_
+        # d = np.sqrt(np.linalg.inv(np.diag(lambdas)))
 
-        alphas = k_pca.alphas_
-        lambdas = k_pca.lambdas_
-        d = np.sqrt(np.linalg.inv(np.diag(lambdas)))
-
-        features_proj = np.array(features).dot((feat_train - mu[None, :]).T.dot(alphas.dot(d)))
+        # features_proj = np.array(features).dot((feat_train - mu[None, :]).T.dot(alphas.dot(d)))
 
         features = features_proj.tolist()
 
         with open('../pr_data/feature_transformed_data.json', 'w') as outfile:
             json.dump(features, outfile)
 
-    else:
-        with open('../pr_data/feature_transformed_data.json', 'r') as infile:
-            features = json.load(infile)
 
 else:
     with open('../pr_data/feature_data.json', 'r') as infile:
