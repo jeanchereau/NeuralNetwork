@@ -44,7 +44,6 @@ query_idx = query_idx - 1
 train_idx = loadmat('../pr_data/cuhk03_new_protocol_config_labeled.mat')['train_idx'].flatten()
 train_idx = train_idx - 1
 
-# Loading Features and Indices for Training, Query & Gallery
 print('Loading feature data...')
 with open('../pr_data/feature_data.json', 'r') as infile:
     features = json.load(infile)
