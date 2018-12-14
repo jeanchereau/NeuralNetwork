@@ -1,14 +1,13 @@
-- BASE:                             # Baseline parameters for testing.
-    RANK: 10                          # Number of elements in gallery closest to query.
-    DISPLAY: False                      # Whether to display the results for each query - Recommended for debugging.
-    N_CLUSTERS: 1467
-    N_CLUSTERS_VALID: 100               # Number of clusters used for validation - DO NOT edit.
-    N_CLUSTERS_TRAIN: 667                    # Number of clusters we expect to find in given feature set - DO NOT edit.
-    N_CLUSTERS_TEST: 700
-    TRANSFORM: True
-- METRIC:                        # Baseline parameters for dimension reduction & spreading of data.
-    METRIC_TRAIN: False
-    M_PCA: 128                         # Mpca - can be integer (<= n_clusters - 1) or empty (= None).
-- CLUSTERING:                       # Baseline parameters for training / clustering.
-    CLUSTER: True                # Whether to train a clustered model or not. If not, load model from '.npy' file.
-    N_INIT: 4                           # Number of ... . If 'KMEANS' is False, override.
+- BASE:                               # Baseline parameters for testing.
+    RANK: 10                            # Number of documents to retrieve.
+    DISPLAY: False                      # Display graphic results for query - Recommend False for speed.
+    N_CLUSTERS: 1467                    # Number of clusters in data-set - DO NOT edit.
+    N_CLUSTERS_VALID: 100               # Number of clusters used for validation.
+    N_CLUSTERS_TEST: 700                # Number of clusters used for test - DO NOT edit.
+    TRANSFORM: True                     # Apply transform on data-set. Baseline is False.
+- METRIC:                             # Parameters for transform on data-set.
+    METRIC_TRAIN: False                 # After training, Metric is stored in file 'metric_log_file.npy' - Recommend False for speed.
+    M_PCA: 128                          # Number of Principle Components to keep.
+- CLUSTERING:                         # Parameters for clustering.
+    CLUSTER: True                       # Perform final testing with clustering on testing set using KMeans.
+    N_INIT: 4                           # Number of tries for KMeans.

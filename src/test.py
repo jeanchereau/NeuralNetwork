@@ -43,7 +43,7 @@ def rem_feat_cam_label(feat_gallery, gallery_idx, query_id, cam_id, labels, cam_
     return feat_gall_cam_rem, gall_cam_rem_idx
 
 
-#
+# Test Retrieval
 def rank_query(features, query_idx, gallery_idx, file_list, labels, cam_idx, rank=1, display=False, cluster_means=None):
     feat_query, feat_gallery = set_feat_query_gallery(features, query_idx, gallery_idx)
 

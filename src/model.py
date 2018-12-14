@@ -2,6 +2,7 @@ import numpy as np
 from functions import eigen_order
 
 
+# Function for basic PCA.
 def pca(features, m_pca=None):
     rows, cols = features.shape
 
@@ -17,6 +18,7 @@ def pca(features, m_pca=None):
     return u, mu
 
 
+# Compute gradient of sum of distances between points of dissimilar classes. Returns g and dg
 def compute_dg(features, labels, quad_u):
     rows, cols = features.shape
 
@@ -32,6 +34,7 @@ def compute_dg(features, labels, quad_u):
     return g, dg
 
 
+# Compute sum of element-wise square of differences between points of similar classes.
 def compute_sim_feat(features, labels):
     rows, cols = features.shape
 
@@ -46,6 +49,7 @@ def compute_sim_feat(features, labels):
     return y2
 
 
+# Iterative Projection steps 1 & 2.
 def iter_project(quad_u, y2, f, obj_f):
 
     lam = (f - obj_f) / (y2.dot(y2))
@@ -57,6 +61,7 @@ def iter_project(quad_u, y2, f, obj_f):
     return quad_u_nxt
 
 
+# Gradient ascent algorithm with Iterative Projection.
 def optimize_metric(features, labels, max_iter=20, alpha=1e-11, tol=1e-1, tol_f=1e-3, obj_f=1):
     cols = features.shape[1]
 

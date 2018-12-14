@@ -8,7 +8,6 @@ from test import rank_query, set_feat_test
 from model import pca, optimize_metric
 
 
-# Read configurations file in './cfgs'
 print('Reading YAML file...')
 with open('../cfgs/conf.yml') as ymlfile:
     cfg = yaml.load(ymlfile)
@@ -19,7 +18,6 @@ for section in cfg:
             bool_display = attr[1].get('DISPLAY')
             n_clusters = attr[1].get('N_CLUSTERS')
             n_clusters_valid = attr[1].get('N_CLUSTERS_VALID')
-            n_clusters_train = attr[1].get('N_CLUSTERS_TRAIN')
             n_clusters_test = attr[1].get('N_CLUSTERS_TEST')
             bool_transform = attr[1].get('TRANSFORM')
         elif attr[0] == 'METRIC':
@@ -78,7 +76,7 @@ if bool_transform:
         mu_train = np.load('./train_mean.npy', 'r')
 
     print('Applying metric on data...')
-    features_proj = (np.array(features) - mu_train).dot(g_mat.T)
+    features_proj = (np.array(features) - mu_train[None, :]).dot(g_mat.T)
     features = features_proj.tolist()
 
     feat_train = set_feat_train(features, train_idx)

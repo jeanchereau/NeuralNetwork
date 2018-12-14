@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+# Function to retrieve k nearest neighbours with euclidean distance (l2 norm).
 def knn(x_s, x_data, k=1):
     x_dist = np.linalg.norm(x_data - x_s[None, :], axis=1)
 
@@ -10,6 +11,7 @@ def knn(x_s, x_data, k=1):
     return idx
 
 
+# Returns real parts of eigenvectors associated with m largest eigenvalues in decreasing order.
 def eigen_order(matrix, m=None):
     lc, vc = np.linalg.eig(matrix)
 
@@ -25,13 +27,12 @@ def eigen_order(matrix, m=None):
     return v.real
 
 
+# Display retrieval results for given query
 def result_display(rank, color, image_files):
     color_list = ['black', 'green', 'red']
-    w = rank + 3
-    h = 3
-    fig = plt.figure(figsize=(w, h))
-    cols = rank + 1
-    rows = 1
+
+    fig = plt.figure(figsize=(rank + 3, 3))
+    cols, rows = rank + 1, 1
 
     i = 0
     for image_file in image_files:
