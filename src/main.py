@@ -52,29 +52,39 @@ with open('../pr_data/feature_data.json', 'r') as infile:
     features = json.load(infile)
 
 if bool_transform:
+    print('Flattening data...')
+    features_proj = np.log(np.array(features) + 1)
+    features = features_proj.tolist()
+
     if bool_metric_train:
         feat_train, train_idx, feat_valid, valid_idx = set_feat_train_valid(features, train_idx,
                                                                             n_clusters_valid, labels)
 
+        print('Centering data...')
+        mu_train, mu_valid = np.mean(np.array(feat_train), axis=0), np.mean(np.array(feat_valid), axis=0)
+
         print('Training metric...')
         print('-- Validating')
-        NULL, n_iter = optimize_metric(np.array(feat_valid), labels[valid_idx])
+        NULL, n_iter = optimize_metric(np.array(feat_valid) - mu_valid[None, :], labels[valid_idx])
 
         print('-- Final Training')
-        g_mat, n_iter = optimize_metric(np.array(feat_train), labels[train_idx], max_iter=n_iter, obj_f=10)
+        g_mat, n_iter = optimize_metric(np.array(feat_train) - mu_train[None, :],
+                                        labels[train_idx], max_iter=n_iter, obj_f=1, alpha=1e-12)
 
-        np.save('./metric_file.npy', g_mat)
+        np.save('./metric_log_file.npy', g_mat)
+        np.save('./train_mean.npy', mu_train)
     else:
-        g_mat = np.load('./metric_file.npy', 'r')
+        g_mat = np.load('./metric_log_file.npy', 'r')
+        mu_train = np.load('./train_mean.npy', 'r')
 
-    print('Applying metric on all features...')
-    features_proj = np.array(features).dot(g_mat.T)
+    print('Applying metric on data...')
+    features_proj = (np.array(features) - mu_train).dot(g_mat.T)
     features = features_proj.tolist()
 
-    feat_train = np.array(set_feat_train(features, train_idx))
+    feat_train = set_feat_train(features, train_idx)
 
-    print('Applying PCA...')
-    u_pca, mu_pca = pca(feat_train, m_pca=m_pca)
+    print('Applying PCA on data...')
+    u_pca, mu_pca = pca(np.array(feat_train), m_pca=m_pca)
     features_proj = (np.array(features) - mu_pca[None, :]).dot(u_pca)
     features = features_proj.tolist()
 
